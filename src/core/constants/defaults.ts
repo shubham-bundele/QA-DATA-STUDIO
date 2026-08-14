@@ -1,0 +1,16 @@
+export const DEFAULT_LOCALE = "en";
+export const DEFAULT_COUNT = 10;
+export const DEFAULT_PASSWORD_LENGTH = 12;
+export const DEFAULT_AGE_MIN = 18;
+export const DEFAULT_AGE_MAX = 85;
+export const DEFAULT_CURRENCY = "USD";
+export const DEFAULT_BALANCE_MIN = 0;
+export const DEFAULT_BALANCE_MAX = 1_000_000;
+export const DEFAULT_EXPIRY_MIN_MONTHS = 1;
+export const DEFAULT_EXPIRY_MAX_MONTHS = 60;
+export const DEFAULT_CSV_DELIMITER = ",";
+export const DEFAULT_SQL_TABLE_NAME = "test_data";
+export const DEFAULT_SQL_DIALECT = "mysql";
+export const DEFAULT_XML_ROOT = "data";
+export const DEFAULT_XML_RECORD = "record";
+export const DEFAULT_EXCEL_SHEET = "Sheet1";
