@@ -4,17 +4,30 @@ import Link from "next/link"
 import { Database } from "lucide-react"
 import { motion } from "framer-motion"
 
-const productLinks = [
-  { href: "/features", label: "Features" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/dashboard", label: "Dashboard" },
+const testingLinks = [
+  { href: "/automation-builder", label: "Automation Builder" },
+  { href: "/performance-tester", label: "Performance Tester" },
+  { href: "/security-scanner", label: "Security Scanner" },
+  { href: "/mock-server", label: "Live Mock Server" },
+  { href: "/test-cases", label: "Test Case Generator" },
+  { href: "/schema", label: "Schema Analysis" },
+  { href: "/schema-intelligence", label: "API Spec Analyzer" },
+]
+
+const enterpriseLinks = [
+  { href: "/visual-regression", label: "Visual Regression" },
+  { href: "/accessibility-scanner", label: "Accessibility Scanner" },
+  { href: "/self-healing", label: "AI Test Self-Healing" },
+  { href: "/contract-testing", label: "API Contract Testing" },
+  { href: "/ci-cd-integration", label: "CI/CD Webhooks" },
+  { href: "/database-seeder", label: "Direct DB Seeder" },
 ]
 
 const companyLinks = [
-  { href: "/about", label: "About" },
+  { href: "/about", label: "About Us" },
   { href: "/contact", label: "Contact" },
-  { href: "/privacy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
+  { href: "/privacy", label: "Privacy Policy" },
+  { href: "/terms", label: "Terms of Service" },
 ]
 
 const developerLinks = [
@@ -95,14 +108,14 @@ export function MarketingFooter() {
             </p>
           </div>
 
-          {/* Product */}
-          <FooterLinkSection title="Product" links={productLinks} />
+          {/* Testing & AI */}
+          <FooterLinkSection title="Testing & AI" links={testingLinks} />
+
+          {/* Enterprise */}
+          <FooterLinkSection title="Enterprise" links={enterpriseLinks} />
 
           {/* Company */}
           <FooterLinkSection title="Company" links={companyLinks} />
-
-          {/* Developers */}
-          <FooterLinkSection title="Developers" links={developerLinks} />
         </div>
 
         {/* Bottom Bar */}

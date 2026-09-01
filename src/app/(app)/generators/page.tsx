@@ -10,6 +10,8 @@ import {
   Landmark,
   MapPin,
   User,
+  FlaskConical,
+  Shield,
   type LucideIcon,
 } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
@@ -33,15 +35,6 @@ interface GeneratorItem {
   href: string
   active: true
 }
-
-interface ComingSoonItem {
-  title: string
-  description: string
-  icon: LucideIcon
-  active: false
-}
-
-type GeneratorCardData = GeneratorItem | ComingSoonItem
 
 const activeGenerators: GeneratorItem[] = [
   {
@@ -76,50 +69,68 @@ const activeGenerators: GeneratorItem[] = [
     href: "/generators/banking",
     active: true,
   },
-]
-
-const comingSoonGenerators: ComingSoonItem[] = [
   {
     title: "JSON Sample",
     description:
       "Generate structured JSON documents with nested objects and arrays.",
     icon: FileJson,
-    active: false,
+    href: "/generators/json",
+    active: true,
   },
   {
     title: "CSV Dataset",
     description:
       "Create tabular datasets with configurable columns and row counts.",
     icon: FileSpreadsheet,
-    active: false,
+    href: "/generators/csv",
+    active: true,
   },
   {
     title: "XML",
     description:
       "Produce well-formed XML documents with custom schemas and namespaces.",
     icon: FileCode,
-    active: false,
+    href: "/generators/xml",
+    active: true,
   },
   {
     title: "API Payload",
     description:
       "Build realistic REST and GraphQL request/response payloads for testing.",
     icon: Globe,
-    active: false,
+    href: "/generators/api-payload",
+    active: true,
   },
   {
     title: "SQL",
     description:
       "Generate INSERT statements and seed scripts for popular database engines.",
     icon: Database,
-    active: false,
+    href: "/generators/sql",
+    active: true,
+  },
+  {
+    title: "Boundary Data",
+    description:
+      "Generate edge cases like MAX_INT, empty strings, and special characters.",
+    icon: FlaskConical,
+    href: "/generators/boundary",
+    active: true,
+  },
+  {
+    title: "Security Payloads",
+    description:
+      "Generate SQLi, XSS, and command injection payloads for vulnerability testing.",
+    icon: Shield,
+    href: "/generators/security",
+    active: true,
   },
 ]
 
 function ActiveCard({ generator }: { generator: GeneratorItem }) {
   return (
-    <Link href={generator.href} className="group block">
-      <Card className="h-full transition-all duration-200 hover:border-primary/30 hover:shadow-md">
+    <Link href={generator.href} className="group block h-full">
+      <Card className="h-full transition-all duration-300 hover:border-primary/40 hover-lift hover-glow">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
@@ -139,63 +150,18 @@ function ActiveCard({ generator }: { generator: GeneratorItem }) {
   )
 }
 
-function ComingSoonCard({ generator }: { generator: ComingSoonItem }) {
-  return (
-    <Card className="h-full opacity-60">
-      <CardHeader>
-        <div className="flex items-start justify-between">
-          <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-            <generator.icon className="h-5 w-5" />
-          </div>
-          <Badge variant="secondary">Coming Soon</Badge>
-        </div>
-        <CardTitle className="mt-3 text-base">{generator.title}</CardTitle>
-        <CardDescription className="leading-relaxed">
-          {generator.description}
-        </CardDescription>
-      </CardHeader>
-    </Card>
-  )
-}
-
 export default function GeneratorsPage() {
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 flex-1 p-4 md:p-8 pt-6">
       <PageHeader
         title="Data Generators"
         description="Browse and launch test data generators. Pick a generator to start creating realistic, structured data for your QA workflows."
       />
 
-      {/* Active Generators */}
       <section>
-        <div className="mb-4 flex items-center gap-2">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Available Generators
-          </h3>
-          <Badge variant="default" className="text-[11px]">
-            {activeGenerators.length}
-          </Badge>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {activeGenerators.map((generator) => (
             <ActiveCard key={generator.title} generator={generator} />
-          ))}
-        </div>
-      </section>
-
-      {/* Coming Soon Generators */}
-      <section>
-        <div className="mb-4 flex items-center gap-2">
-          <h3 className="text-sm font-medium text-muted-foreground">
-            Coming Soon
-          </h3>
-          <Badge variant="outline" className="text-[11px]">
-            {comingSoonGenerators.length}
-          </Badge>
-        </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {comingSoonGenerators.map((generator) => (
-            <ComingSoonCard key={generator.title} generator={generator} />
           ))}
         </div>
       </section>

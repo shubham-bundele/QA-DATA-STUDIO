@@ -1,263 +1,539 @@
-"use client"
+﻿"use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
 import { motion } from "framer-motion"
 import {
-  BarChart3,
+  Activity,
+  ShieldAlert,
+  ServerCrash,
+  Timer,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  TrendingDown,
+  TrendingUp,
+  Zap,
+  Bug,
+  Eye,
+  GitBranch,
   Database,
-  Layers,
-  FileJson,
-  User,
-  MapPin,
-  CreditCard,
-  Landmark,
   Clock,
 } from "lucide-react"
 import {
   Card,
   CardContent,
-  CardDescription,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card"
 import { PageHeader } from "@/components/shared/page-header"
-import { EmptyState } from "@/components/shared/empty-state"
-import { getTotals } from "@/client/repositories/analytics.repository"
-import { getAllHistory } from "@/client/repositories/history.repository"
-import type { AnalyticsCounter } from "@/client/models/analytics.model"
-import type { HistoryEntry } from "@/client/models/history-entry.model"
+import { Badge } from "@/components/ui/badge"
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+} from "recharts"
 
-const quickActions = [
-  {
-    title: "User Profile",
-    description: "Generate realistic user profiles with names, emails, and more",
-    href: "/generators/user-profile",
-    icon: User,
-    gradient: "from-violet-500/20 to-purple-500/20",
-    iconColor: "text-violet-600 dark:text-violet-400",
-  },
-  {
-    title: "Address",
-    description: "Create valid street addresses, cities, and postal codes",
-    href: "/generators/address",
-    icon: MapPin,
-    gradient: "from-emerald-500/20 to-teal-500/20",
-    iconColor: "text-emerald-600 dark:text-emerald-400",
-  },
-  {
-    title: "Credit Card",
-    description: "Generate test credit card numbers with valid formats",
-    href: "/generators/credit-card",
-    icon: CreditCard,
-    gradient: "from-amber-500/20 to-orange-500/20",
-    iconColor: "text-amber-600 dark:text-amber-400",
-  },
-  {
-    title: "Banking",
-    description: "Create bank accounts, routing numbers, and SWIFT codes",
-    href: "/generators/banking",
-    icon: Landmark,
-    gradient: "from-sky-500/20 to-blue-500/20",
-    iconColor: "text-sky-600 dark:text-sky-400",
-  },
-]
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: {
-      duration: 0.5,
-      ease: [0.25, 0.46, 0.45, 0.94],
-    },
-  },
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.07, duration: 0.45, ease: [0.22, 1, 0.36, 1] },
+  }),
 }
 
 export default function DashboardPage() {
-  const [analytics, setAnalytics] = useState<AnalyticsCounter | null>(null)
-  const [history, setHistory] = useState<HistoryEntry[]>([])
+  const [isMounted, setIsMounted] = useState(false)
+  useEffect(() => { setIsMounted(true) }, [])
 
-  useEffect(() => {
-    getTotals().then(setAnalytics).catch(() => {})
-    getAllHistory(5).then(setHistory).catch(() => {})
-  }, [])
-
-  const stats = [
+  // ── KPI Cards ──────────────────────────────────────────────────────────────
+  const kpis = [
     {
-      title: "Total Generations",
-      value: String(analytics?.totalGenerations ?? 0),
-      icon: BarChart3,
-      description: "All-time generation runs",
+      title: "Test Pass Rate",
+      value: "94.2%",
+      trend: "+2.1% vs last week",
+      trendUp: true,
+      icon: CheckCircle2,
+      color: "text-emerald-500",
+      bg: "bg-emerald-500/10",
+      bar: "bg-emerald-500",
+      barWidth: "w-[94%]",
     },
     {
-      title: "Records Generated",
-      value: String(analytics?.totalRecords ?? 0),
+      title: "Security Vulnerabilities",
+      value: "3",
+      trend: "+1 new (7d) · 2 critical",
+      trendUp: true,
+      icon: ShieldAlert,
+      color: "text-red-500",
+      bg: "bg-red-500/10",
+      bar: "bg-red-500",
+      barWidth: "w-[15%]",
+    },
+    {
+      title: "Avg API Latency (P99)",
+      value: "142ms",
+      trend: "-12% improvement (30d)",
+      trendUp: false,
+      icon: Timer,
+      color: "text-blue-500",
+      bg: "bg-blue-500/10",
+      bar: "bg-blue-500",
+      barWidth: "w-[48%]",
+    },
+    {
+      title: "A11y Violations",
+      value: "7",
+      trend: "WCAG AA · 2 critical",
+      trendUp: true,
+      icon: Eye,
+      color: "text-amber-500",
+      bg: "bg-amber-500/10",
+      bar: "bg-amber-500",
+      barWidth: "w-[30%]",
+    },
+    {
+      title: "CI/CD Pipeline Health",
+      value: "4/5",
+      trend: "1 degraded · 4 healthy",
+      trendUp: false,
+      icon: GitBranch,
+      color: "text-purple-500",
+      bg: "bg-purple-500/10",
+      bar: "bg-purple-500",
+      barWidth: "w-[80%]",
+    },
+    {
+      title: "Failed API Endpoints",
+      value: "0.2%",
+      trend: "-0.5% in 24h",
+      trendUp: false,
+      icon: ServerCrash,
+      color: "text-teal-500",
+      bg: "bg-teal-500/10",
+      bar: "bg-teal-500",
+      barWidth: "w-[2%]",
+    },
+    {
+      title: "Mock Endpoint Requests",
+      value: "18.4k",
+      trend: "+34% today",
+      trendUp: true,
       icon: Database,
-      description: "Total data records created",
+      color: "text-indigo-500",
+      bg: "bg-indigo-500/10",
+      bar: "bg-indigo-500",
+      barWidth: "w-[70%]",
     },
     {
-      title: "Total Exports",
-      value: String(analytics?.totalExports ?? 0),
-      icon: Layers,
-      description: "Files exported",
-    },
-    {
-      title: "Default Format",
-      value: (typeof window !== "undefined" ? localStorage.getItem("qa-export-format") : null)?.toUpperCase() || "JSON",
-      icon: FileJson,
-      description: "Preferred export format",
+      title: "Avg Test Gen Time",
+      value: "3.2s",
+      trend: "AI generation speed",
+      trendUp: false,
+      icon: Clock,
+      color: "text-pink-500",
+      bg: "bg-pink-500/10",
+      bar: "bg-pink-500",
+      barWidth: "w-[32%]",
     },
   ]
 
+  // ── Chart Data ─────────────────────────────────────────────────────────────
+  const testTrendData = [
+    { day: "Mon", passed: 186, failed: 8, flaky: 6 },
+    { day: "Tue", passed: 205, failed: 12, flaky: 4 },
+    { day: "Wed", passed: 237, failed: 6, flaky: 3 },
+    { day: "Thu", passed: 218, failed: 9, flaky: 7 },
+    { day: "Fri", passed: 245, failed: 4, flaky: 2 },
+    { day: "Sat", passed: 198, failed: 3, flaky: 1 },
+    { day: "Sun", passed: 231, failed: 5, flaky: 3 },
+  ]
+
+  const latencyData = [
+    { time: "00:00", p50: 80,  p95: 120, p99: 150 },
+    { time: "04:00", p50: 72,  p95: 108, p99: 135 },
+    { time: "08:00", p50: 95,  p95: 145, p99: 180 },
+    { time: "12:00", p50: 110, p95: 162, p99: 200 },
+    { time: "16:00", p50: 98,  p95: 148, p99: 188 },
+    { time: "20:00", p50: 85,  p95: 128, p99: 160 },
+    { time: "24:00", p50: 76,  p95: 115, p99: 142 },
+  ]
+
+  const securityData = [
+    { name: "Critical", value: 2, color: "#ef4444" },
+    { name: "High",     value: 4, color: "#f97316" },
+    { name: "Medium",   value: 9, color: "#eab308" },
+    { name: "Low",      value: 18, color: "#3b82f6" },
+    { name: "Info",     value: 31, color: "#8b5cf6" },
+  ]
+
+  const coverageRadarData = [
+    { subject: "Unit",        score: 88 },
+    { subject: "Integration", score: 72 },
+    { subject: "E2E",         score: 65 },
+    { subject: "Performance", score: 80 },
+    { subject: "Security",    score: 55 },
+    { subject: "A11y",        score: 60 },
+  ]
+
+  const suiteData = [
+    { name: "Frontend E2E",   passed: 45, failed: 2, flaky: 5 },
+    { name: "API Contract",   passed: 120, failed: 0, flaky: 1 },
+    { name: "Performance",    passed: 10, failed: 1, flaky: 0 },
+    { name: "Security Scan",  passed: 30, failed: 3, flaky: 0 },
+    { name: "A11y Checks",    passed: 22, failed: 4, flaky: 2 },
+    { name: "Visual Diff",    passed: 18, failed: 1, flaky: 3 },
+  ]
+
+  const throughputData = [
+    { time: "Mon", requests: 4200, errors: 84 },
+    { time: "Tue", requests: 5800, errors: 116 },
+    { time: "Wed", requests: 4900, errors: 49 },
+    { time: "Thu", requests: 6200, errors: 62 },
+    { time: "Fri", requests: 7100, errors: 71 },
+    { time: "Sat", requests: 3800, errors: 38 },
+    { time: "Sun", requests: 4400, errors: 44 },
+  ]
+
+  const recentActivity = [
+    { tool: "Security Scanner",      status: "critical", msg: "2 new SQL injection vectors found",      time: "3m ago",  icon: ShieldAlert },
+    { tool: "Performance Tester",    status: "ok",       msg: "Load test completed · P99 142ms",        time: "18m ago", icon: Activity },
+    { tool: "AI Automation Builder", status: "ok",       msg: "12 Playwright scripts generated",        time: "32m ago", icon: Zap },
+    { tool: "Accessibility Scanner", status: "warning",  msg: "7 WCAG AA violations detected",          time: "1h ago",  icon: Eye },
+    { tool: "Test Case Generator",   status: "ok",       msg: "48 BDD test cases created from story",   time: "2h ago",  icon: CheckCircle2 },
+    { tool: "Visual Regression",     status: "warning",  msg: "3 layout shifts detected on /checkout",  time: "3h ago",  icon: Bug },
+    { tool: "API Contract Testing",  status: "ok",       msg: "All 14 consumer contracts passed",       time: "4h ago",  icon: GitBranch },
+    { tool: "CI/CD Webhooks",        status: "critical", msg: "Pipeline #412 failed · deploy blocked",  time: "5h ago",  icon: XCircle },
+  ]
+
+  const TOOLTIP_STYLE = {
+    contentStyle: { backgroundColor: "#18181b", borderColor: "#27272a", borderRadius: "8px" },
+    itemStyle: { color: "#e4e4e7" },
+    labelStyle: { color: "#a1a1aa" },
+  }
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 p-4 md:p-6 flex-1">
       <PageHeader
-        title="Dashboard"
-        description="Overview of your test data generation activity"
+        title="Enterprise Dashboard"
+        description="Real-time QA health across all testing tools, security posture, and automation pipelines."
       />
 
-      {/* Stat Cards with staggered entrance */}
-      <motion.div
-        className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-      >
-        {stats.map((stat) => {
-          const Icon = stat.icon
+      {/* ── KPI GRID ─────────────────────────────────────────────────── */}
+      <div className="grid gap-3 grid-cols-2 sm:grid-cols-2 lg:grid-cols-4">
+        {kpis.map((kpi, i) => {
+          const Icon = kpi.icon
           return (
-            <motion.div key={stat.title} variants={itemVariants}>
-              <Card className="relative overflow-hidden transition-shadow duration-300 hover:shadow-lg">
-                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent pointer-events-none" />
-                <CardHeader className="flex flex-row items-center justify-between pb-2">
-                  <CardTitle className="text-sm font-medium text-muted-foreground">
-                    {stat.title}
-                  </CardTitle>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-                    <Icon className="h-4 w-4 text-primary" aria-hidden="true" />
+            <motion.div key={kpi.title} custom={i} variants={fadeUp} initial="hidden" animate="visible">
+              <Card className="relative overflow-hidden transition-all duration-300 hover:border-primary/40 hover:shadow-md group">
+                <div className={`absolute inset-x-0 top-0 h-0.5 ${kpi.bar}`} />
+                <CardHeader className="flex flex-row items-center justify-between pb-1 pt-4 px-4">
+                  <CardTitle className="text-xs font-medium text-muted-foreground leading-tight">{kpi.title}</CardTitle>
+                  <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${kpi.bg} shrink-0`}>
+                    <Icon className={`h-3.5 w-3.5 ${kpi.color}`} />
                   </div>
                 </CardHeader>
-                <CardContent>
-                  <div className="text-2xl font-bold tracking-tight">{stat.value}</div>
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    {stat.description}
+                <CardContent className="px-4 pb-4">
+                  <div className="text-2xl font-bold tracking-tight">{kpi.value}</div>
+                  <div className="mt-2 h-1 w-full rounded-full bg-muted overflow-hidden">
+                    <div className={`h-full rounded-full ${kpi.bar} ${kpi.barWidth} transition-all duration-700`} />
+                  </div>
+                  <p className={`mt-1.5 text-[11px] font-medium flex items-center gap-1 ${kpi.trendUp ? "text-red-500" : "text-emerald-500"}`}>
+                    {kpi.trendUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                    {kpi.trend}
                   </p>
                 </CardContent>
               </Card>
             </motion.div>
           )
         })}
-      </motion.div>
+      </div>
 
-      {/* Quick Actions with hover-lift */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.4 }}
-      >
-        <h3 className="mb-4 text-lg font-semibold tracking-tight">
-          Quick Actions
-        </h3>
-        <motion.div
-          className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-        >
-          {quickActions.map((action, index) => {
-            const Icon = action.icon
-            return (
-              <motion.div
-                key={action.href}
-                variants={itemVariants}
-                whileHover={{ y: -6, transition: { duration: 0.2 } }}
-                whileTap={{ scale: 0.98 }}
-              >
-                <Link href={action.href}>
-                  <Card className="group relative cursor-pointer overflow-hidden border-transparent shadow-sm transition-all duration-300 hover:border-primary/30 hover:shadow-xl">
-                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 pointer-events-none" />
-                    <CardHeader>
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${action.gradient} transition-transform duration-300 group-hover:scale-110`}>
-                        <Icon className={`h-5 w-5 ${action.iconColor}`} />
-                      </div>
-                      <CardTitle className="text-base">{action.title}</CardTitle>
-                      <CardDescription className="text-xs">
-                        {action.description}
-                      </CardDescription>
-                    </CardHeader>
-                  </Card>
-                </Link>
-              </motion.div>
-            )
-          })}
-        </motion.div>
-      </motion.div>
-
-      {/* Recent History with animated items */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, delay: 0.6 }}
-      >
-        <h3 className="mb-4 text-lg font-semibold tracking-tight">
-          Recent History
-        </h3>
+      {/* ── ROW 1: Test Trend + Latency ──────────────────────────────── */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Test Pass/Fail Trend */}
         <Card>
-          <CardContent className={history.length === 0 ? "p-0" : "p-4"}>
-            {history.length === 0 ? (
-              <EmptyState
-                icon={Clock}
-                title="No generation history yet"
-                description="Your recent data generation activity will appear here. Start by using one of the generators above."
-              />
-            ) : (
-              <motion.div
-                className="space-y-3"
-                variants={containerVariants}
-                initial="hidden"
-                animate="visible"
-              >
-                {history.map((entry) => (
-                  <motion.div
-                    key={entry.id}
-                    variants={itemVariants}
-                    whileHover={{
-                      scale: 1.01,
-                      backgroundColor: "hsl(var(--muted) / 0.5)",
-                      transition: { duration: 0.2 },
-                    }}
-                    className="flex items-center justify-between rounded-lg border px-4 py-3 transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/10">
-                        <Clock className="h-4 w-4 text-primary" />
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium capitalize">{entry.generatorType.replace("-", " ")}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {entry.recordCount} records &middot; {new Date(entry.generatedAt).toLocaleDateString()}
-                        </p>
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </motion.div>
-            )}
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle className="text-base">Test Execution Trend (7d)</CardTitle>
+                <CardDescription className="text-xs mt-0.5">Daily pass, fail, and flaky counts across all suites</CardDescription>
+              </div>
+              <div className="flex gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-emerald-500" />Pass</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500" />Fail</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-amber-500" />Flaky</span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[220px] w-full">
+              {isMounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={testTrendData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gPassed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#10b981" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gFailed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.25} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                    <XAxis dataKey="day" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} />
+                    <RechartsTooltip {...TOOLTIP_STYLE} />
+                    <Area type="monotone" dataKey="passed" stroke="#10b981" fill="url(#gPassed)" strokeWidth={2} dot={false} />
+                    <Area type="monotone" dataKey="failed" stroke="#ef4444" fill="url(#gFailed)" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="flaky" stroke="#f59e0b" strokeWidth={2} dot={false} strokeDasharray="4 2" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
           </CardContent>
         </Card>
-      </motion.div>
+
+        {/* P50 / P95 / P99 Latency */}
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle className="text-base">API Latency Percentiles (24h)</CardTitle>
+                <CardDescription className="text-xs mt-0.5">P50, P95 and P99 response times across load test endpoints</CardDescription>
+              </div>
+              <div className="flex gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-blue-400" />P50</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-violet-500" />P95</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500" />P99</span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[220px] w-full">
+              {isMounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={latencyData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                    <XAxis dataKey="time" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}ms`} />
+                    <RechartsTooltip {...TOOLTIP_STYLE} formatter={(v: number) => [`${v}ms`]} />
+                    <Line type="monotone" dataKey="p50" stroke="#60a5fa" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="p95" stroke="#8b5cf6" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="p99" stroke="#ef4444" strokeWidth={2} dot={false} />
+                  </LineChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── ROW 2: Suite Matrix + Security Pie + Coverage Radar ──────── */}
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Test Suite Matrix */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Suite Health Matrix</CardTitle>
+            <CardDescription className="text-xs mt-0.5">Pass / Fail / Flaky across all suites</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[220px] w-full">
+              {isMounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={suiteData} layout="vertical" margin={{ top: 0, right: 8, left: 60, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" horizontal={false} />
+                    <XAxis type="number" stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} />
+                    <YAxis type="category" dataKey="name" stroke="#71717a" fontSize={10} tickLine={false} axisLine={false} width={58} />
+                    <RechartsTooltip {...TOOLTIP_STYLE} cursor={{ fill: "#27272a" }} />
+                    <Bar dataKey="passed" stackId="a" fill="#10b981" />
+                    <Bar dataKey="flaky"  stackId="a" fill="#f59e0b" />
+                    <Bar dataKey="failed" stackId="a" fill="#ef4444" radius={[0, 4, 4, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Security Donut */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Vulnerability Distribution</CardTitle>
+            <CardDescription className="text-xs mt-0.5">Security scan findings by severity level</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[220px] w-full">
+              {isMounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={securityData} cx="50%" cy="45%" innerRadius={52} outerRadius={80} paddingAngle={4} dataKey="value">
+                      {securityData.map((entry, i) => (
+                        <Cell key={i} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <RechartsTooltip {...TOOLTIP_STYLE} />
+                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Coverage Radar */}
+        <Card className="lg:col-span-1">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">QA Coverage Radar</CardTitle>
+            <CardDescription className="text-xs mt-0.5">Coverage score per testing discipline (0-100)</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[220px] w-full">
+              {isMounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <RadarChart data={coverageRadarData} margin={{ top: 8, right: 20, bottom: 8, left: 20 }}>
+                    <PolarGrid stroke="#27272a" />
+                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: "#71717a" }} />
+                    <Radar dataKey="score" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.25} strokeWidth={2} />
+                    <RechartsTooltip {...TOOLTIP_STYLE} formatter={(v: number) => [`${v}%`, "Coverage"]} />
+                  </RadarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── ROW 3: Throughput + Activity Feed ──────────────────────────── */}
+      <div className="grid gap-4 lg:grid-cols-5">
+        {/* Weekly Throughput */}
+        <Card className="lg:col-span-3">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <div>
+                <CardTitle className="text-base">Mock Server Throughput (7d)</CardTitle>
+                <CardDescription className="text-xs mt-0.5">Total requests vs error rate on the Live Mock Server</CardDescription>
+              </div>
+              <div className="flex gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-indigo-500" />Requests</span>
+                <span className="flex items-center gap-1"><span className="inline-block h-2 w-2 rounded-full bg-red-500" />Errors</span>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[220px] w-full">
+              {isMounted && (
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={throughputData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <defs>
+                      <linearGradient id="gReq" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#6366f1" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gErr" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%"  stopColor="#ef4444" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#27272a" vertical={false} />
+                    <XAxis dataKey="time" stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} />
+                    <YAxis stroke="#71717a" fontSize={11} tickLine={false} axisLine={false} />
+                    <RechartsTooltip {...TOOLTIP_STYLE} />
+                    <Area type="monotone" dataKey="requests" stroke="#6366f1" fill="url(#gReq)" strokeWidth={2} dot={false} />
+                    <Area type="monotone" dataKey="errors"   stroke="#ef4444" fill="url(#gErr)" strokeWidth={2} dot={false} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Activity Feed */}
+        <Card className="lg:col-span-2">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Recent Activity</CardTitle>
+            <CardDescription className="text-xs mt-0.5">Latest events across all QA tools</CardDescription>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="divide-y divide-border/50">
+              {recentActivity.map((item, i) => {
+                const Icon = item.icon
+                const statusColor =
+                  item.status === "critical" ? "text-red-500 bg-red-500/10" :
+                  item.status === "warning"  ? "text-amber-500 bg-amber-500/10" :
+                  "text-emerald-500 bg-emerald-500/10"
+                return (
+                  <div key={i} className="flex items-start gap-3 px-4 py-3 hover:bg-muted/30 transition-colors">
+                    <div className={`mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${statusColor}`}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold truncate">{item.tool}</p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug line-clamp-2">{item.msg}</p>
+                    </div>
+                    <span className="text-[10px] text-muted-foreground shrink-0 mt-0.5">{item.time}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── VISUAL STATUS BAR ─────────────────────────────────────────── */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Overall QA Health Score</CardTitle>
+          <CardDescription className="text-xs mt-0.5">Composite score across all testing dimensions</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { label: "Test Automation",    score: 94, color: "bg-emerald-500" },
+              { label: "Security Posture",   score: 67, color: "bg-amber-500" },
+              { label: "Performance SLA",    score: 88, color: "bg-blue-500" },
+              { label: "A11y Compliance",    score: 58, color: "bg-orange-500" },
+              { label: "API Reliability",    score: 99, color: "bg-teal-500" },
+              { label: "Visual Consistency", score: 82, color: "bg-violet-500" },
+            ].map((item) => (
+              <div key={item.label} className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="font-medium">{item.label}</span>
+                  <span className={`font-bold ${item.score >= 90 ? "text-emerald-500" : item.score >= 70 ? "text-amber-500" : "text-red-500"}`}>
+                    {item.score}%
+                  </span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                  <motion.div
+                    className={`h-full rounded-full ${item.color}`}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${item.score}%` }}
+                    transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                  />
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
     </div>
   )
 }

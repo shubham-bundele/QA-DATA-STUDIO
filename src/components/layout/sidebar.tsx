@@ -3,7 +3,7 @@
 import { useState } from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { ChevronLeft, Database } from "lucide-react"
+import { ChevronLeft, Database, ShieldAlert, Server } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
 import { navSections } from "@/config/navigation"
@@ -67,7 +67,7 @@ export function Sidebar() {
         className="fixed left-0 top-0 z-40 flex h-screen flex-col border-r bg-sidebar-background text-sidebar-foreground will-change-[width]"
       >
         {/* Logo Section — clickable, navigates to home */}
-        <a
+        <Link
           href="/"
           onClick={handleLogoClick}
           className={cn(
@@ -93,7 +93,7 @@ export function Sidebar() {
               </motion.div>
             )}
           </AnimatePresence>
-        </a>
+        </Link>
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto px-3 py-4">
@@ -149,7 +149,7 @@ export function Sidebar() {
                     {isActive && (
                       <motion.div
                         layoutId="sidebar-active-bg"
-                        className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/15 via-primary/10 to-transparent"
+                        className="absolute inset-0 rounded-lg bg-gradient-to-r from-primary/15 via-primary/10 to-transparent border-l-2 border-primary"
                         transition={{ type: "spring", stiffness: 350, damping: 30 }}
                       />
                     )}

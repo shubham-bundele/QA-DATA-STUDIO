@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useTheme } from "next-themes"
-import { Sun, Moon, Monitor, Trash2, AlertTriangle } from "lucide-react"
+import { Sun, Moon, Monitor, Trash2, AlertTriangle, Save, FolderOpen } from "lucide-react"
 import { motion } from "framer-motion"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -26,6 +26,7 @@ import {
 import { PageHeader } from "@/components/shared/page-header"
 import { clearHistory } from "@/client/repositories/history.repository"
 import { resetAnalytics } from "@/client/repositories/analytics.repository"
+import { useSettingsStore } from "@/store/settings-store"
 
 const fadeInUp = {
   hidden: { opacity: 0, y: 16 },
@@ -45,6 +46,7 @@ const themeOptions = [
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme()
+  const settings = useSettingsStore()
   const [exportFormat, setExportFormat] = useState(() => {
     if (typeof window !== "undefined") return localStorage.getItem("qa-export-format") || "json"
     return "json"
@@ -54,6 +56,16 @@ export default function SettingsPage() {
     return 10
   })
   const [clearing, setClearing] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
+  const [headlessToken, setHeadlessToken] = useState(() => {
+    if (typeof window !== "undefined") return localStorage.getItem("qa-headless-token") || "••••••••••••••••••••••••"
+    return "••••••••••••••••••••••••"
+  })
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   useEffect(() => {
     localStorage.setItem("qa-export-format", exportFormat)
@@ -62,6 +74,12 @@ export default function SettingsPage() {
   useEffect(() => {
     localStorage.setItem("qa-record-count", String(recordCount))
   }, [recordCount])
+
+  if (!isMounted) return null
+
+
+  const [savingWorkspace, setSavingWorkspace] = useState(false)
+  const [loadingWorkspace, setLoadingWorkspace] = useState(false)
 
   const handleClearHistory = async () => {
     setClearing(true)
@@ -73,6 +91,58 @@ export default function SettingsPage() {
       toast.error("Failed to clear history")
     } finally {
       setClearing(false)
+    }
+  }
+
+  const handleSaveWorkspace = async () => {
+    setSavingWorkspace(true)
+    try {
+      // Collect everything from localStorage that belongs to QA Data Studio
+      const workspaceData: Record<string, string> = {}
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key) {
+          workspaceData[key] = localStorage.getItem(key) || ""
+        }
+      }
+
+      const res = await fetch('/api/workspace/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(workspaceData)
+      })
+      const data = await res.json()
+      if (res.ok) {
+        toast.success("Workspace saved successfully to workspace.qadata.json")
+      } else {
+        throw new Error(data.error)
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save workspace")
+    } finally {
+      setSavingWorkspace(false)
+    }
+  }
+
+  const handleLoadWorkspace = async () => {
+    setLoadingWorkspace(true)
+    try {
+      const res = await fetch('/api/workspace/load')
+      const data = await res.json()
+      if (res.ok && data.data) {
+        // Restore to localStorage
+        Object.keys(data.data).forEach(key => {
+          localStorage.setItem(key, data.data[key])
+        })
+        toast.success("Workspace loaded successfully! Reloading page...")
+        setTimeout(() => window.location.reload(), 1500)
+      } else {
+        throw new Error(data.error)
+      }
+    } catch (err: any) {
+      toast.error(err.message || "Failed to load workspace")
+    } finally {
+      setLoadingWorkspace(false)
     }
   }
 
@@ -128,6 +198,86 @@ export default function SettingsPage() {
                     </button>
                   )
                 })}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Global Settings from Zustand */}
+        <motion.div variants={fadeInUp} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+          <Card className="transition-all duration-300 hover:shadow-md">
+            <CardHeader>
+              <CardTitle className="text-base">AI & Integration Settings</CardTitle>
+              <CardDescription>
+                Configure the AI model and webhook endpoints.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="llm-model">Default AI Model</Label>
+                <Select value={settings.defaultLlmModel} onValueChange={settings.setDefaultLlmModel}>
+                  <SelectTrigger id="llm-model">
+                    <SelectValue placeholder="Select model" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="gemini-3.6-flash">Gemini 3.6 Flash</SelectItem>
+                    <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="jira-webhook">Jira Webhook URL</Label>
+                <Input
+                  id="jira-webhook"
+                  placeholder="https://your-domain.atlassian.net/rest/api/..."
+                  value={settings.jiraWebhookUrl}
+                  onChange={(e) => settings.setJiraWebhookUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="testrail-webhook">TestRail Webhook URL</Label>
+                <Input
+                  id="testrail-webhook"
+                  placeholder="https://your-domain.testrail.io/index.php?/api/v2/..."
+                  value={settings.testRailWebhookUrl}
+                  onChange={(e) => settings.setTestRailWebhookUrl(e.target.value)}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="include-security"
+                  className="rounded border-gray-300 text-primary focus:ring-primary"
+                  checked={settings.alwaysIncludeSecurity}
+                  onChange={(e) => settings.setAlwaysIncludeSecurity(e.target.checked)}
+                />
+                <Label htmlFor="include-security" className="font-normal cursor-pointer">
+                  Always include security test cases
+                </Label>
+              </div>
+
+              <div className="pt-4 border-t space-y-3">
+                <Label>Headless Execution Token (CI/CD)</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    readOnly 
+                    type="password"
+                    value={headlessToken} 
+                    className="font-mono text-sm bg-muted/50" 
+                  />
+                  <Button variant="secondary" onClick={() => {
+                    const token = 'qa_' + Math.random().toString(36).substring(2) + crypto.randomUUID().replace(/-/g, '');
+                    localStorage.setItem('qa-headless-token', token);
+                    setHeadlessToken(token);
+                    toast.success("New token generated! Please copy it immediately.");
+                  }}>
+                    Regenerate
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Used for triggering tests via the <code>/api/webhook/execute</code> endpoint.</p>
               </div>
             </CardContent>
           </Card>
@@ -192,6 +342,40 @@ export default function SettingsPage() {
                   className="w-32"
                 />
               </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Workspace Data (Phase 2) */}
+        <motion.div variants={fadeInUp} transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}>
+          <Card className="transition-all duration-300 hover:shadow-md">
+            <CardHeader>
+              <CardTitle className="text-base text-primary flex items-center gap-2">
+                <FolderOpen className="h-4 w-4" /> Workspace Persistence (Phase 2)
+              </CardTitle>
+              <CardDescription>
+                Save all your configurations, history, and test cases locally. No external database required.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col sm:flex-row gap-4">
+              <Button
+                variant="default"
+                onClick={handleSaveWorkspace}
+                disabled={savingWorkspace}
+                className="w-full sm:w-auto flex-1 transition-all duration-300"
+              >
+                <Save className="mr-2 h-4 w-4" aria-hidden="true" />
+                {savingWorkspace ? "Saving Workspace..." : "Save Workspace (.qadata.json)"}
+              </Button>
+              <Button
+                variant="outline"
+                onClick={handleLoadWorkspace}
+                disabled={loadingWorkspace}
+                className="w-full sm:w-auto flex-1 transition-all duration-300"
+              >
+                <FolderOpen className="mr-2 h-4 w-4" aria-hidden="true" />
+                {loadingWorkspace ? "Loading Workspace..." : "Load Workspace"}
+              </Button>
             </CardContent>
           </Card>
         </motion.div>

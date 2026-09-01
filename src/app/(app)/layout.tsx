@@ -27,7 +27,7 @@ export default function AppLayout({
         )}
       >
         <Topbar />
-        <main id="main-content" className="flex-1 p-6 lg:p-8">{children}</main>
+        <main id="main-content" className="flex-1 p-4 pb-24 sm:p-6 lg:p-8 lg:pb-24">{children}</main>
       </div>
     </div>
   )

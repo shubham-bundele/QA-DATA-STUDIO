@@ -21,9 +21,9 @@ export function EmptyState({ icon: Icon, title, description, className, children
       transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <motion.div
-        className="flex h-14 w-14 items-center justify-center rounded-full bg-muted"
+        className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary ring-8 ring-primary/5"
         animate={{
-          y: [0, -6, 0],
+          y: [0, -8, 0],
         }}
         transition={{
           duration: 3,
@@ -31,7 +31,7 @@ export function EmptyState({ icon: Icon, title, description, className, children
           ease: "easeInOut",
         }}
       >
-        <Icon className="h-6 w-6 text-muted-foreground" />
+        <Icon className="h-7 w-7" />
       </motion.div>
       <motion.h3
         className="mt-4 text-lg font-semibold"

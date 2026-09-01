@@ -1,0 +1,53 @@
+import { NextResponse } from 'next/server';
+import { GoogleGenAI } from '@google/genai';
+
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+export async function POST(req: Request) {
+  try {
+    const { testCases, userStory } = await req.json();
+
+    if (!testCases || !Array.isArray(testCases)) {
+      return NextResponse.json({ error: 'Test cases are required' }, { status: 400 });
+    }
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.6-flash',
+      contents: `You are an expert SDET. Write a Playwright test script in TypeScript for the following User Story and Test Cases.
+      
+      User Story: ${userStory}
+
+      Test Cases JSON:
+      ${JSON.stringify(testCases, null, 2)}
+      
+      Requirements:
+      - Use standard Playwright format: import { test, expect } from '@playwright/test';
+      - Create a test.describe block.
+      - Add realistic test.step() blocks inside each test.
+      - Output ONLY valid TypeScript code. No markdown code block backticks surrounding it, just raw code.`,
+      config: {
+        temperature: 0.2
+      }
+    });
+
+    if (!response.text) {
+        throw new Error("No response text");
+    }
+    
+    // Clean up potential markdown backticks if the model still adds them
+    let code = response.text.trim();
+    if (code.startsWith("\`\`\`typescript")) code = code.replace("\`\`\`typescript", "");
+    else if (code.startsWith("\`\`\`ts")) code = code.replace("\`\`\`ts", "");
+    else if (code.startsWith("\`\`\`")) code = code.replace("\`\`\`", "");
+    if (code.endsWith("\`\`\`")) code = code.slice(0, -3);
+
+    return NextResponse.json({ code: code.trim() });
+  } catch (error: unknown) {
+    console.error('Error generating Playwright code:', error);
+    const msg = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json(
+      { error: 'Failed to generate Playwright code: ' + msg },
+      { status: 500 }
+    );
+  }
+}

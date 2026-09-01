@@ -10,6 +10,7 @@ import {
   Download,
   Clock,
   Database,
+  Server,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -26,6 +27,7 @@ import {
 import { EmptyState } from "@/components/shared/empty-state"
 import { PageHeader } from "@/components/shared/page-header"
 import { OutputViewer } from "@/components/generators/output-viewer"
+import { DbConnectionModal } from "@/components/db-connection-modal"
 import { useCopyToClipboard } from "@/hooks/use-copy-clipboard"
 import { useUnsavedChangesStore } from "@/stores/unsaved-changes-store"
 import { exportData, triggerDownload } from "@/features/export/export.service"
@@ -53,6 +55,7 @@ export function GeneratorLayout({
   onClear,
 }: GeneratorLayoutProps) {
   const [viewMode, setViewMode] = useState<"table" | "json">("table")
+  const [showDbModal, setShowDbModal] = useState(false)
   const { copy, copied } = useCopyToClipboard()
   const setDirty = useUnsavedChangesStore((s) => s.setDirty)
 
@@ -221,6 +224,10 @@ export function GeneratorLayout({
                           <DropdownMenuItem onClick={() => handleExport("csv")}>CSV</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
+                      <Button variant="default" size="sm" className="gap-1.5 bg-blue-600 hover:bg-blue-700" onClick={() => setShowDbModal(true)}>
+                        <Server className="h-3.5 w-3.5" />
+                        Stream to DB
+                      </Button>
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -272,6 +279,12 @@ export function GeneratorLayout({
           </Card>
         </motion.div>
       </div>
+
+      <DbConnectionModal
+        open={showDbModal}
+        onOpenChange={setShowDbModal}
+        payload={data || []}
+      />
     </div>
   )
 }
