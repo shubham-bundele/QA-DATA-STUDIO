@@ -50,7 +50,7 @@ Return the response STRICTLY as a JSON object with this exact structure, no mark
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.7-flash',
+      model: 'gemini-1.5-flash',
       contents: prompt,
       config: {
         temperature: 0.1

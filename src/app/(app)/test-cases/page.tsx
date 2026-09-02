@@ -175,7 +175,9 @@ export default function TestCasesPage() {
 
   async function handleAnalyze() {
     const trimmed = storyInput.trim()
-    if (!trimmed) return      setTestCases({ isAnalyzing: true, error: "", result: null })
+    if (!trimmed) return
+
+    setTestCases({ isAnalyzing: true, error: "", result: null })
     const start = performance.now()
 
     try {
@@ -827,5 +829,6 @@ function TestCaseCard({
     </motion.div>
   )
 }
+
 
 
