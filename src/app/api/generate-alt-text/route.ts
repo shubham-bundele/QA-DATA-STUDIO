@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: [
         'You are an accessibility expert. Write a concise, descriptive alt text for this image. Do not include phrases like "Image of" or "Picture of". Just describe the content and function.',
         { inlineData: { data: buffer.toString('base64'), mimeType } }

@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
+      model: 'gemini-2.5-flash',
       contents: `You are an expert Security and QA Engineer. Analyze the following OpenAPI/Swagger JSON schema.
       
       Extract each API endpoint and generate 3 test cases for each endpoint:

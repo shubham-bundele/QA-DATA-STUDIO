@@ -32,7 +32,7 @@ Guidelines:
 4. Assume standard locators if the user doesn't provide them (e.g., input[name='email']).`;
 
     const responseStream = await ai.models.generateContentStream({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       contents: [
          { role: 'user', parts: [{ text: systemPrompt }] },
          { role: 'model', parts: [{ text: "Understood. I will provide raw automation code." }] },
