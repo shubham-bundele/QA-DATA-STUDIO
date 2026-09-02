@@ -1,8 +1,14 @@
-import { NextResponse } from "next/server";
+﻿import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
 export async function POST(req: Request) {
-  try {
+    try {
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { status: 500 }
+      );
+    }
     const { results, scenarioSteps, config } = await req.json();
 
     if (!results) {
@@ -51,7 +57,13 @@ Do not wrap your response in markdown code blocks, just write plain markdown.`;
     const stream = new ReadableStream({
       async start(controller) {
         const encoder = new TextEncoder();
-        try {
+          try {
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { status: 500 }
+      );
+    }
           for await (const chunk of responseStream) {
             if (chunk.text) {
               controller.enqueue(encoder.encode(chunk.text));
@@ -76,4 +88,5 @@ Do not wrap your response in markdown code blocks, just write plain markdown.`;
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
 

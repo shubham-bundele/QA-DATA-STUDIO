@@ -1,8 +1,14 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { GoogleGenAI } from '@google/genai';
 
 export async function POST(req: Request) {
-  try {
+    try {
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { status: 500 }
+      );
+    }
     const { imageUrl } = await req.json();
     if (!imageUrl) return NextResponse.json({ error: "Missing imageUrl" }, { status: 400 });
 
@@ -31,3 +37,4 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+

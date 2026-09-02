@@ -1,8 +1,14 @@
-import { NextRequest, NextResponse } from "next/server";
+﻿import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Type, Schema } from "@google/genai";
 
 export async function POST(req: NextRequest) {
-  try {
+    try {
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { status: 500 }
+      );
+    }
     const { prompt } = await req.json();
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -55,4 +61,5 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: error.message || "Failed to generate mocks" }, { status: 500 });
   }
 }
+
 
