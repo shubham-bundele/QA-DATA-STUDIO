@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-3.6-flash',
       contents: `You are an expert SDET. Write a Playwright test script in TypeScript for the following User Story and Test Cases.
       
       User Story: ${userStory}

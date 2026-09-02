@@ -15,7 +15,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      defaultLlmModel: 'gemini-2.5-flash',
+      defaultLlmModel: 'gemini-3.6-flash',
       jiraWebhookUrl: '',
       testRailWebhookUrl: '',
       alwaysIncludeSecurity: true,
