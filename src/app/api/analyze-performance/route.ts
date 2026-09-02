@@ -50,7 +50,7 @@ Include:
 Do not wrap your response in markdown code blocks, just write plain markdown.`;
 
     const responseStream = await ai.models.generateContentStream({
-      model: "gemini-2.0-flash",
+      model: "gemini-3.7-flash",
       contents: prompt,
     });
 

@@ -38,7 +38,7 @@ Analyze the violation and provide the exact corrected HTML that resolves this ac
 Output ONLY the corrected HTML code, no markdown blocks.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.7-flash',
       contents: prompt,
       config: {
         temperature: 0.1

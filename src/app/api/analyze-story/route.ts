@@ -105,7 +105,7 @@ export async function POST(req: Request) {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash',
+      model: 'gemini-3.7-flash',
       contents: `You are an expert QA Automation Architect. 
       Analyze the following user story and generate structured test cases.
       Break it down into actors, actions, preconditions, outcomes, and edge cases.
