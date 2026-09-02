@@ -2,7 +2,7 @@
 import { GoogleGenAI } from '@google/genai';
 
 export async function POST(req: Request) {
-    try {
+  try {
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
         { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
@@ -25,7 +25,7 @@ export async function POST(req: Request) {
     const ai = new GoogleGenAI({ apiKey });
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: [
         'You are an accessibility expert. Write a concise, descriptive alt text for this image. Do not include phrases like "Image of" or "Picture of". Just describe the content and function.',
         { inlineData: { data: buffer.toString('base64'), mimeType } }

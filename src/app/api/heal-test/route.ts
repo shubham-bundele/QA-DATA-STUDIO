@@ -2,7 +2,7 @@
 import { GoogleGenAI } from '@google/genai';
 
 export async function POST(req: Request) {
-    try {
+  try {
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
         { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
@@ -43,7 +43,7 @@ Analyze the DOM changes and rewrite the automation script with the corrected CSS
 Output ONLY the corrected script code, no markdown blocks.`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: prompt,
       config: {
         temperature: 0.2

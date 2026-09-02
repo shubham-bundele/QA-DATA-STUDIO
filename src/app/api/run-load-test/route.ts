@@ -9,6 +9,12 @@ const throttleMap = {
 
 export async function POST(req: Request) {
   try {
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { status: 500 }
+      );
+    }
     const body = await req.json();
     // Support legacy (baseUrl + endpoints) OR new (scenarioSteps)
     const { 

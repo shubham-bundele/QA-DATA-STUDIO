@@ -3,6 +3,12 @@ import { chromium } from 'playwright';
 
 export async function POST(req: Request) {
   try {
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { status: 500 }
+      );
+    }
     const { url } = await req.json();
     if (!url) return NextResponse.json({ error: "Missing url" }, { status: 400 });
 

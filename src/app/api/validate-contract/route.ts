@@ -2,7 +2,7 @@
 import { GoogleGenAI } from '@google/genai';
 
 export async function POST(req: Request) {
-    try {
+  try {
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
         { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
@@ -48,7 +48,7 @@ Return the response STRICTLY as a JSON object with this exact structure, no mark
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.0-flash',
       contents: prompt,
       config: {
         temperature: 0.1

@@ -91,7 +91,7 @@ const resultSchema: Schema = {
 };
 
 export async function POST(req: Request) {
-    try {
+  try {
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
         { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
@@ -105,7 +105,7 @@ export async function POST(req: Request) {
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      model: 'gemini-2.0-flash',
       contents: `You are an expert QA Automation Architect. 
       Analyze the following user story and generate structured test cases.
       Break it down into actors, actions, preconditions, outcomes, and edge cases.

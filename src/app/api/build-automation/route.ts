@@ -2,7 +2,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 export async function POST(req: Request) {
-    try {
+  try {
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
         { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
@@ -30,7 +30,7 @@ Guidelines:
 4. Assume standard locators if the user doesn't provide them (e.g., input[name='email']).`;
 
     const responseStream = await ai.models.generateContentStream({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       contents: [
          { role: 'user', parts: [{ text: systemPrompt }] },
          { role: 'model', parts: [{ text: "Understood. I will provide raw automation code." }] },
@@ -42,12 +42,6 @@ Guidelines:
       async start(controller) {
         const encoder = new TextEncoder();
           try {
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json(
-        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
-        { status: 500 }
-      );
-    }
           for await (const chunk of responseStream) {
             if (chunk.text) {
               controller.enqueue(encoder.encode(chunk.text));
