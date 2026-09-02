@@ -32,7 +32,7 @@ jobs:
     # ── Environment Variables ──────────────────────────────────────────────
     # Secrets are stored in the repository's Settings → Secrets → Actions.
     env:
-      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
 
     steps:
