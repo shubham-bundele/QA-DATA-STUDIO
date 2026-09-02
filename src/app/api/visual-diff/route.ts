@@ -6,6 +6,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   try {
     if (!process.env.GEMINI_API_KEY) {

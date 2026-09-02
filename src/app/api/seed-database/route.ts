@@ -1,4 +1,6 @@
 import { NextResponse } from 'next/server';
+
+export const maxDuration = 60;
 // Use dynamic imports to prevent build failures if pg/mysql2 aren't installed correctly locally, 
 // though we installed them in the step before.
 import { Pool } from 'pg';

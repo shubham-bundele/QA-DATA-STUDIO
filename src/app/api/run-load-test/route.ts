@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 60;
+
 const throttleMap = {
   "None": 0,
   "Fast 3G": 150,

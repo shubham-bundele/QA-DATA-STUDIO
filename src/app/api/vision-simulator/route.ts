@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { chromium } from 'playwright';
 
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   try {
     if (!process.env.GEMINI_API_KEY) {

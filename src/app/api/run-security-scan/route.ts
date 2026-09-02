@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 
+export const maxDuration = 60;
+
 const payloads = [
   { name: "SQL Injection (Classic)", type: "SQLi", payload: "' OR '1'='1" },
   { name: "SQL Injection (Stacked)", type: "SQLi", payload: "'; DROP TABLE users; --" },

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+export const maxDuration = 60;
+
 export async function GET() {
   try {
     const filePath = path.join(process.cwd(), 'workspace.qadata.json');

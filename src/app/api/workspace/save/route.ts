@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 
+export const maxDuration = 60;
+
 export async function POST(req: Request) {
   try {
     if (!process.env.GEMINI_API_KEY) {

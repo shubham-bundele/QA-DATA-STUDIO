@@ -3,6 +3,8 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 
+export const maxDuration = 60;
+
 const getMocksFile = () => path.join(os.tmpdir(), 'qa-data-studio-mocks.json');
 
 const handleMock = async (req: Request, { params }: { params: Promise<{ slug: string[] }> }) => {

@@ -1,6 +1,8 @@
 ﻿import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type, Schema } from '@google/genai';
 
+export const maxDuration = 60;
+
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const resultSchema: Schema = {
