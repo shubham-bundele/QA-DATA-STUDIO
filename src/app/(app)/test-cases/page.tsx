@@ -1,4 +1,4 @@
-"use client"
+﻿"use client"
 
 import { useState, useCallback } from "react"
 import Link from "next/link"
@@ -31,6 +31,7 @@ import { ExportWebhookModal } from "@/components/export-webhook-modal"
 import { HistoryModal } from "@/components/history-modal"
 import { PlaywrightPreviewModal } from "@/components/playwright-preview-modal"
 import { useCopyToClipboard } from "@/hooks/use-copy-clipboard"
+import { useWorkspaceStore } from "@/stores/workspace-store"
 import { saveStoryResult } from "@/core/db/history-db"
 
 // ---------------------------------------------------------------------------
@@ -149,12 +150,10 @@ const PRIORITY_CONFIG: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 export default function TestCasesPage() {
-  const [storyInput, setStoryInput] = useState("As a bank customer, I want to transfer money to another account so that I can pay my bills. The transfer should fail if my balance is insufficient, or if the destination account is invalid. It should succeed and deduct the amount if everything is correct.")
-  const [result, setResult] = useState<AnalysisResult | null>(null)
-  const [isAnalyzing, setIsAnalyzing] = useState(false)
-  const [duration, setDuration] = useState<number | undefined>()
+    const { testCases, setTestCases } = useWorkspaceStore()
+  const { storyInput, isAnalyzing, duration, error } = testCases
+  const result = testCases.result as AnalysisResult | null
   const [activeTab, setActiveTab] = useState("all")
-  const [error, setError] = useState("")
   const [showWebhookModal, setShowWebhookModal] = useState(false)
   const [showHistoryModal, setShowHistoryModal] = useState(false)
   const [showPlaywrightModal, setShowPlaywrightModal] = useState(false)
@@ -164,31 +163,19 @@ export default function TestCasesPage() {
 
   const loadSample = useCallback((key: string) => {
     const story = SAMPLE_STORIES[key]
-    if (story) {
-      setStoryInput(story)
-      setResult(null)
-      setDuration(undefined)
-      setError("")
+    if (story) {      setTestCases({ storyInput: story, result: null, duration: undefined, error: "" })
     }
   }, [])
 
-  const loadHistoryResult = useCallback((pastResult: AnalysisResult) => {
-    setResult(pastResult)
-    setStoryInput(pastResult.userStory || "")
-    setActiveTab("all")
-    setDuration(0) // Loaded from history
-    setError("")
+  const loadHistoryResult = useCallback((pastResult: AnalysisResult) => {      setTestCases({ result: pastResult, storyInput: pastResult.userStory || "", duration: 0, error: "" })
+      setActiveTab("all")
   }, [])
 
   // -- Analyze -------------------------------------------------------------
 
   async function handleAnalyze() {
     const trimmed = storyInput.trim()
-    if (!trimmed) return
-
-    setIsAnalyzing(true)
-    setError("")
-    setResult(null)
+    if (!trimmed) return      setTestCases({ isAnalyzing: true, error: "", result: null })
     const start = performance.now()
 
     try {
@@ -205,8 +192,7 @@ export default function TestCasesPage() {
       
       const analysis = await res.json()
       const elapsed = Math.round(performance.now() - start)
-      setResult(analysis)
-      setDuration(elapsed)
+      setTestCases({ result: analysis, duration: elapsed })
       setActiveTab("all")
       
       try {
@@ -219,11 +205,8 @@ export default function TestCasesPage() {
         `Generated ${analysis.summary.totalCases} test cases in ${elapsed}ms`
       )
     } catch (err) {
-      setError(
-        `Analysis failed. ${err instanceof Error ? err.message : "Please check your input and try again."}`
-      )
-    } finally {
-      setIsAnalyzing(false)
+      setTestCases({ error: `Analysis failed. ${err instanceof Error ? err.message : "Please check your input and try again."}` })
+    } finally {      setTestCases({ isAnalyzing: false })
     }
   }
 
@@ -369,7 +352,7 @@ export default function TestCasesPage() {
               {/* Textarea */}
               <textarea
                 value={storyInput}
-                onChange={(e) => setStoryInput(e.target.value)}
+                onChange={(e) => setTestCases({ storyInput: e.target.value })}
                 placeholder="As a user, I want to register with my email and password so that I can access my account"
                 rows={7}
                 aria-label="User story input"
@@ -844,3 +827,5 @@ function TestCaseCard({
     </motion.div>
   )
 }
+
+
