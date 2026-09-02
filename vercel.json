@@ -1,0 +1,13 @@
+{
+  "crons": [
+    {
+      "path": "/api/orchestrator/cron",
+      "schedule": "*/30 * * * *"
+    }
+  ],
+  "functions": {
+    "src/app/api/orchestrator/**/*.ts": {
+      "maxDuration": 60
+    }
+  }
+}

@@ -1,53 +1,64 @@
-import { NextResponse } from "next/server";
-import fs from 'fs';
-import path from 'path';
-import os from 'os';
+import { NextResponse } from 'next/server';
+import { GoogleGenAI, Type, Schema } from "@/lib/llm-client";
 
 export const maxDuration = 60;
 
-const getMocksFile = () => path.join(os.tmpdir(), 'qa-data-studio-mocks.json');
-
-const handleMock = async (req: Request, { params }: { params: Promise<{ slug: string[] }> }) => {
+export async function POST(req: Request) {
   try {
-    const resolvedParams = await params;
-    const file = getMocksFile();
-    if (!fs.existsSync(file)) {
-      return NextResponse.json({ error: "No mocks defined" }, { status: 404 });
+    if (!process.env.GEMINI_API_KEY) {
+      return NextResponse.json(
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { status: 500 }
+      );
+    }
+    const { script, htmlContext, errorMessage } = await req.json();
+
+    if (!script || !htmlContext) {
+      return NextResponse.json({ error: "Missing script or htmlContext" }, { status: 400 });
     }
 
-    const mocks = JSON.parse(fs.readFileSync(file, 'utf-8'));
-    const requestPath = '/' + (resolvedParams.slug?.join('/') || '');
-    const requestMethod = req.method.toUpperCase();
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return NextResponse.json({ error: "GEMINI_API_KEY is not set." }, { status: 500 });
+    }
 
-    // Find a matching mock
-    const match = mocks.find((m: any) => 
-      m.method === requestMethod && 
-      m.path === requestPath
-    );
+    const ai = new GoogleGenAI({ apiKey });
 
-    if (match) {
-      // Simulate delay if configured
-      if (match.delay > 0) {
-        await new Promise(r => setTimeout(r, match.delay));
+    const prompt = `
+You are an expert QA Automation Engineer.
+The following E2E test script (Playwright/Cypress/Selenium) is failing because the DOM has changed.
+
+Original Failing Script:
+\`\`\`
+${script}
+\`\`\`
+
+Error Message (if any):
+${errorMessage || "Locator not found or timeout."}
+
+New HTML Context (DOM snippet):
+\`\`\`html
+${htmlContext}
+\`\`\`
+
+Analyze the DOM changes and rewrite the automation script with the corrected CSS or XPath selectors.
+Output ONLY the corrected script code, no markdown blocks.`;
+
+    const response = await ai.models.generateContent({
+      model: 'gemini-3.7-flash',
+      contents: prompt,
+      config: {
+        temperature: 0.2
       }
+    });
 
-      // Parse body if it's JSON
-      let responseBody = match.responseBody;
-      try {
-         responseBody = JSON.parse(match.responseBody);
-      } catch(e) {}
+    let healedScript = response.text || "";
+    healedScript = healedScript.replace(/^```(\w+)?\n/, '').replace(/```$/, '').trim();
 
-      return NextResponse.json(responseBody, { status: match.statusCode || 200 });
-    }
-
-    return NextResponse.json({ error: `No mock found for ${requestMethod} ${requestPath}` }, { status: 404 });
+    return NextResponse.json({ healedScript });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
 
-export const GET = handleMock;
-export const POST = handleMock;
-export const PUT = handleMock;
-export const DELETE = handleMock;
-export const PATCH = handleMock;
+

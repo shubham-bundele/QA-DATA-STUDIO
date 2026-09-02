@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useState, useCallback } from "react"
 import Link from "next/link"
@@ -204,9 +204,10 @@ export default function TestCasesPage() {
       }
       
       toast.success(
-        `Generated ${analysis.summary.totalCases} test cases in ${elapsed}ms`
+        `Central AI successfully analyzed and generated ${analysis.summary.totalCases} test cases in ${elapsed}ms!`
       )
     } catch (err) {
+      toast.error(`Central AI Analysis Failed: ${err instanceof Error ? err.message : 'Unknown error'}`)
       setTestCases({ error: `Analysis failed. ${err instanceof Error ? err.message : "Please check your input and try again."}` })
     } finally {      setTestCases({ isAnalyzing: false })
     }

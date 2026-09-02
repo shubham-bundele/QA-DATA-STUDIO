@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useRef, useState, useEffect } from "react"
 import Link from "next/link"
@@ -19,6 +19,7 @@ import {
   Eye,
   Webhook,
   ChevronRight,
+  Code2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -34,6 +35,7 @@ const scaleIn = {
 
 const tools = [
   { icon: BrainCircuit,  title: "AI Automation Builder",  href: "/automation-builder",    badge: "QA AI",        color: "from-blue-500/20 to-cyan-500/20",      ic: "text-blue-400",    bg: "bg-blue-500/10" },
+  { icon: Code2,         title: "VS Code Extension",      href: "/vscode-extension",      badge: "Plugin",       color: "from-blue-500/20 to-indigo-500/20",    ic: "text-blue-400",    bg: "bg-blue-500/10" },
   { icon: Activity,      title: "Performance Tester",     href: "/performance-tester",    badge: "Load Testing", color: "from-green-500/20 to-emerald-500/20",   ic: "text-green-400",   bg: "bg-green-500/10" },
   { icon: Shield,        title: "Security Scanner",       href: "/security-scanner",      badge: "SecOps",       color: "from-red-500/20 to-rose-500/20",        ic: "text-red-400",     bg: "bg-red-500/10" },
   { icon: Database,      title: "Live Mock Server",       href: "/mock-server",           badge: "Dev Tools",    color: "from-purple-500/20 to-fuchsia-500/20",  ic: "text-purple-400",  bg: "bg-purple-500/10" },
@@ -129,6 +131,12 @@ export default function HomePage() {
                 Explore Features
                 <ChevronRight className="h-4 w-4" />
               </Link>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="gap-2 px-8 text-base border-blue-500/30 text-blue-400 hover:bg-blue-500/10 backdrop-blur-sm hover-glow">
+              <a href="/qa-data-studio-vscode.vsix" download>
+                <Code2 className="h-4 w-4" />
+                Download VS Code Extension
+              </a>
             </Button>
           </motion.div>
 

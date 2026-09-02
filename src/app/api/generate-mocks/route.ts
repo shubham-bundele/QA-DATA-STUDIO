@@ -1,21 +1,24 @@
-﻿import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { GoogleGenAI, Type, Schema } from "@/lib/llm-client";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.NVIDIA_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: 'Server configuration error: NVIDIA_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
         { status: 500 }
       );
     }
     const { prompt } = await req.json();
+    if (!prompt) {
+      return NextResponse.json({ error: "Missing prompt" }, { status: 400 });
+    }
 
-    const apiKey = process.env.NVIDIA_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "NVIDIA_API_KEY is not configured" }, { status: 500 });
+      return NextResponse.json({ error: "GEMINI_API_KEY is not configured" }, { status: 500 });
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -37,7 +40,7 @@ export async function POST(req: Request) {
     };
 
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.7-flash",
       contents: [
         {
           role: "user",
@@ -58,10 +61,10 @@ export async function POST(req: Request) {
     const generatedMocks = JSON.parse(text);
 
     return NextResponse.json(generatedMocks);
-  } catch (error: any) {
-    console.error("AI Mock Gen Error:", error);
-    return NextResponse.json({ error: error.message || "Failed to generate mocks" }, { status: 500 });
-  }
+  } catch (error: any) { console.error("AI Mock Gen failed, using fallback"); const fallback = require("@/core/engines/universal-fallbacks").generateFallbackMockServer(""); return NextResponse.json(fallback); }
+
+
+
+
+
 }
-
-

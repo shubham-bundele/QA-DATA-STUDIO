@@ -58,8 +58,8 @@ export default function SettingsPage() {
   const [clearing, setClearing] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [headlessToken, setHeadlessToken] = useState(() => {
-    if (typeof window !== "undefined") return localStorage.getItem("qa-headless-token") || "••••••••••••••••••••••••"
-    return "••••••••••••••••••••••••"
+    if (typeof window !== "undefined") return localStorage.getItem("qa-headless-token") || "Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢"
+    return "Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢Ã¢â‚¬Â¢"
   })
 
   // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -220,8 +220,8 @@ export default function SettingsPage() {
                     <SelectValue placeholder="Select model" />
                   </SelectTrigger>
                   <SelectContent>
+                    <SelectItem value="gemini-3.7-flash">Gemini 3.7 Flash</SelectItem>
                     <SelectItem value="gemini-3.6-flash">Gemini 3.6 Flash</SelectItem>
-                    <SelectItem value="gemini-1.5-pro">Gemini 1.5 Pro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

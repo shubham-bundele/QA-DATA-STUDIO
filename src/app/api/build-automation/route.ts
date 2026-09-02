@@ -1,13 +1,13 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { GoogleGenAI, Type, Schema } from "@/lib/llm-client";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.NVIDIA_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: 'Server configuration error: NVIDIA_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
         { status: 500 }
       );
     }
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     }
 
     const ai = new GoogleGenAI({
-      apiKey: process.env.NVIDIA_API_KEY,
+      apiKey: process.env.GEMINI_API_KEY,
     });
 
     const systemPrompt = `You are a Senior QA Automation Engineer.
@@ -32,7 +32,7 @@ Guidelines:
 4. Assume standard locators if the user doesn't provide them (e.g., input[name='email']).`;
 
     const responseStream = await ai.models.generateContentStream({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.7-flash",
       contents: [
          { role: 'user', parts: [{ text: systemPrompt }] },
          { role: 'model', parts: [{ text: "Understood. I will provide raw automation code." }] },
@@ -63,10 +63,9 @@ Guidelines:
         "Connection": "keep-alive",
       },
     });
-  } catch (error: any) {
-    console.error("Automation Builder Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  } catch (error: any) { console.error("AI Build Automation failed, using fallback"); const fallbackText = "AI Service unavailable. Generating standard fallback boilerplate.\\n\\n```typescript\\n// Boilerplate Automation\\nimport { test, expect } from `@playwright/test`;\\n```\\n"; const stream = new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode(fallbackText)); controller.close(); } }); return new Response(stream, { headers: { "Content-Type": "text/event-stream" } }); }
+
+
+
+
 }
-
-

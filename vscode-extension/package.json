@@ -1,0 +1,55 @@
+{
+  "name": "qa-data-studio-vscode",
+  "displayName": "QA Data Studio Playwright Generator",
+  "description": "Generate robust Playwright scripts directly from HTML snippets using your local QA Data Studio backend.",
+  "version": "1.0.1",
+  "publisher": "shubham-bundele",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Testing"
+  ],
+  "activationEvents": [
+    "onCommand:qa-data-studio.generateScript"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "qa-data-studio.generateScript",
+        "title": "QA Studio: Generate Playwright Script from HTML"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "when": "editorHasSelection",
+          "command": "qa-data-studio.generateScript",
+          "group": "1_modification"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "QA Data Studio",
+      "properties": {
+        "qaDataStudio.backendUrl": {
+          "type": "string",
+          "default": "https://qa-data-studio.vercel.app",
+          "description": "URL of your QA Data Studio instance"
+        },
+        "qaDataStudio.framework": {
+          "type": "string",
+          "default": "Playwright POM (TypeScript)",
+          "enum": [
+            "Playwright (TypeScript)",
+            "Playwright POM (TypeScript)",
+            "Playwright BDD (Cucumber)",
+            "Cypress (JavaScript)"
+          ],
+          "description": "Target framework for code generation"
+        }
+      }
+    }
+  }
+}

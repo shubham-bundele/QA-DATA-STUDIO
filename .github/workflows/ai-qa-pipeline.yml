@@ -1,0 +1,108 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# AI QA Orchestrator — GitHub Actions CI/CD Pipeline
+#
+# This workflow builds the Next.js application, starts it, fires the
+# centralized AI QA orchestrator endpoint, and fails the build if critical
+# quality issues are detected.
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: AI QA Orchestrator Pipeline
+
+on:
+  # Run on every push to the main branches
+  push:
+    branches:
+      - main
+      - master
+
+  # Run on every pull request targeting the main branches
+  pull_request:
+    branches:
+      - main
+      - master
+
+  # Allow manual one-off runs from the GitHub Actions UI
+  workflow_dispatch:
+
+jobs:
+  ai-qa-orchestration:
+    name: AI QA Orchestration
+    runs-on: ubuntu-latest
+
+    # ── Environment Variables ──────────────────────────────────────────────
+    # Secrets are stored in the repository's Settings → Secrets → Actions.
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL }}
+
+    steps:
+      # ── Step 1: Checkout repository ────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # ── Step 2: Set up Node.js 20 ──────────────────────────────────────
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          # Cache npm dependencies to speed up subsequent runs
+          cache: "npm"
+
+      # ── Step 3: Install dependencies ───────────────────────────────────
+      # Uses `npm ci` (clean install) for reproducible, locked-version installs
+      - name: Install dependencies
+        run: npm ci
+
+      # ── Step 4: Build the Next.js application ──────────────────────────
+      # A failing build here will abort the pipeline before any tests run
+      - name: Build Next.js app
+        run: npm run build
+
+      # ── Step 5: Start Next.js server in the background ─────────────────
+      # `&` forks the process; `sleep 10` gives the server time to bind to
+      # port 3000 before the orchestrator curl is fired.
+      - name: Start Next.js server
+        run: |
+          npx next start &
+          sleep 10
+
+      # ── Step 6: Trigger the AI QA Orchestrator endpoint ────────────────
+      # POSTs to the orchestrator API with a `triggeredBy` context identifier.
+      # The full JSON response is saved to report.json for inspection.
+      - name: Run AI QA orchestration
+        run: |
+          curl -s -X POST http://localhost:3000/api/orchestrator \
+            -H 'Content-Type: application/json' \
+            -d '{"triggeredBy":"github-actions"}' \
+            -o report.json
+
+      # ── Step 7: Print the raw report for build log visibility ──────────
+      - name: Print orchestration report
+        run: cat report.json
+
+      # ── Step 8: Evaluate overall status — fail the build on critical issues
+      # Reads `overallStatus` from report.json via an inline Node.js script.
+      # Exits with code 1 if the status is FAIL or AI_FAILED, blocking merges.
+      - name: Check orchestration status
+        run: |
+          node -e "
+            const fs = require('fs');
+            const report = JSON.parse(fs.readFileSync('report.json', 'utf8'));
+            const status = report.overallStatus || 'UNKNOWN';
+            console.log('Overall QA Status:', status);
+            if (status === 'FAIL' || status === 'AI_FAILED') {
+              console.error('❌ QA Orchestrator reported critical failures. Blocking merge.');
+              process.exit(1);
+            }
+            console.log('✅ QA Orchestrator status is acceptable:', status);
+          "
+
+      # ── Step 9: Upload the report as a build artifact ──────────────────
+      # The report is retained for 30 days so engineers can inspect past runs.
+      - name: Upload QA orchestrator report
+        if: always() # Upload even when earlier steps fail, for debugging
+        uses: actions/upload-artifact@v4
+        with:
+          name: qa-orchestrator-report
+          path: report.json
+          retention-days: 30

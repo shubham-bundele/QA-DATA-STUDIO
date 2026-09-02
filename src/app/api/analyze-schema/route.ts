@@ -1,26 +1,28 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type, Schema } from "@/lib/llm-client";
 
 export const maxDuration = 60;
 
-const ai = new GoogleGenAI({ apiKey: process.env.NVIDIA_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 export async function POST(req: Request) {
+  let schema = "{}";
   try {
-    if (!process.env.NVIDIA_API_KEY) {
+    const body = await req.json();
+    schema = body.schema;
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: 'Server configuration error: NVIDIA_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing.' },
         { status: 500 }
       );
     }
-    const { schema } = await req.json();
 
     if (!schema) {
       return NextResponse.json({ error: 'Schema input is required' }, { status: 400 });
     }
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      model: 'gemini-3.7-flash',
       contents: `You are an expert Security and QA Engineer. Analyze the following OpenAPI/Swagger JSON schema.
       
       Extract each API endpoint and generate 3 test cases for each endpoint:
@@ -61,12 +63,14 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ analysis });
   } catch (error: unknown) {
-    console.error('Error analyzing schema:', error);
-    const msg = error instanceof Error ? error.message : "Unknown error";
-    return NextResponse.json(
-      { error: 'Failed to analyze API schema: ' + msg },
-      { status: 500 }
-    );
+    console.error("AI analyze-schema failed, using fallback");
+    const fallback = require("@/core/engines/universal-fallbacks").generateFallbackSchemaAnalysis(schema);
+    return NextResponse.json({ analysis: fallback });
   }
 }
+
+
+
+
+
 

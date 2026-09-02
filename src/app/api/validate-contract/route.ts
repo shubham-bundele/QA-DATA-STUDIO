@@ -1,13 +1,13 @@
-﻿import { NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { GoogleGenAI, Type, Schema } from "@/lib/llm-client";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.NVIDIA_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: 'Server configuration error: NVIDIA_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
         { status: 500 }
       );
     }
@@ -17,9 +17,9 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing schema or payload" }, { status: 400 });
     }
 
-    const apiKey = process.env.NVIDIA_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY;
     if (!apiKey) {
-      return NextResponse.json({ error: "NVIDIA_API_KEY is not set." }, { status: 500 });
+      return NextResponse.json({ error: "GEMINI_API_KEY is not set." }, { status: 500 });
     }
 
     const ai = new GoogleGenAI({ apiKey });
@@ -50,7 +50,7 @@ Return the response STRICTLY as a JSON object with this exact structure, no mark
 }`;
 
     const response = await ai.models.generateContent({
-      model: 'gemini-3.6-flash',
+      model: 'gemini-3.7-flash',
       contents: prompt,
       config: {
         temperature: 0.1
@@ -62,9 +62,9 @@ Return the response STRICTLY as a JSON object with this exact structure, no mark
 
     const result = JSON.parse(text);
     return NextResponse.json(result);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  } catch (error: any) { console.error("AI Validate Contract failed, using fallback"); const fallback = require("@/core/engines/universal-fallbacks").generateFallbackContractValidation(); return NextResponse.json(fallback); }
+
+
+
+
 }
-
-

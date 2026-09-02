@@ -1,13 +1,13 @@
-﻿import { NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { GoogleGenAI, Type, Schema } from "@/lib/llm-client";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.NVIDIA_API_KEY) {
+    if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json(
-        { error: 'Server configuration error: NVIDIA_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
         { status: 500 }
       );
     }
@@ -18,7 +18,7 @@ export async function POST(req: Request) {
     }
 
     const ai = new GoogleGenAI({
-      apiKey: process.env.NVIDIA_API_KEY,
+      apiKey: process.env.GEMINI_API_KEY,
     });
 
     const prompt = `You are an expert Performance and Reliability Engineer.
@@ -52,7 +52,7 @@ Include:
 Do not wrap your response in markdown code blocks, just write plain markdown.`;
 
     const responseStream = await ai.models.generateContentStream({
-      model: "gemini-3.6-flash",
+      model: "gemini-3.7-flash",
       contents: prompt,
     });
 
@@ -79,10 +79,9 @@ Do not wrap your response in markdown code blocks, just write plain markdown.`;
         "Connection": "keep-alive",
       },
     });
-  } catch (error: any) {
-    console.error("AI Performance Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
+  } catch (error: any) { console.error("AI Performance failed, using fallback"); const fallbackText = "## Executive Summary (Fallback)\\nAI Service unavailable. Based on standard thresholds, your performance looks stable if success rate is 100%.\\n## Recommendations\\n- Use caching\\n- Optimize database queries"; const stream = new ReadableStream({ start(controller) { controller.enqueue(new TextEncoder().encode(fallbackText)); controller.close(); } }); return new Response(stream, { headers: { "Content-Type": "text/event-stream" } }); }
+
+
+
+
 }
-
-

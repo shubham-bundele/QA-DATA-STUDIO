@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import { Play, Download, StopCircle, CheckCircle, Loader2, Settings, Zap, Save, FileJson, BarChart3, Activity, Globe, FileText, Printer, ArrowLeft, Plus, Trash2, Database, Lock, Wifi, Upload, Sparkles, ShieldAlert } from "lucide-react"
+import { GrafanaDashboard } from './GrafanaDashboard';
 import { PageHeader } from "@/components/shared/page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -1166,3 +1167,4 @@ ${scenarioSteps.map(step => {
     </div>
   )
 }
+

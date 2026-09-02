@@ -73,6 +73,13 @@ export const navSections: NavSection[] = [
         icon: FileCode, // Using FileCode instead of importing Wand2 to avoid missing import errors
       },
       {
+        id: "vscode-extension",
+        label: "VS Code Extension",
+        href: "/vscode-extension",
+        icon: FileCode,
+        badge: "New",
+      },
+      {
         id: "performance-tester",
         label: "Performance Tester",
         href: "/performance-tester",

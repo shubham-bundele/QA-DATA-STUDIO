@@ -1,4 +1,14 @@
-﻿import OpenAI from "openai";
+/**
+ * @file llm-client.ts
+ * @description Resilient AI client that wraps the official @google/genai SDK
+ * maintaining the application's fallback and error handling logic.
+ */
+
+import { GoogleGenAI as OfficialGoogleGenAI } from "@google/genai";
+
+// ---------------------------------------------------------------------------
+// Public type exports — drop-in replacements
+// ---------------------------------------------------------------------------
 
 export const Type = {
   OBJECT: "object",
@@ -6,89 +16,213 @@ export const Type = {
   ARRAY: "array",
   NUMBER: "number",
   INTEGER: "integer",
-  BOOLEAN: "boolean"
-};
+  BOOLEAN: "boolean",
+} as const;
 
-export type Schema = any;
+export type Schema = Record<string, unknown>;
 
-function parseGeminiContents(contents: any): any[] {
-  if (typeof contents === 'string') {
-    return [{ role: 'user', content: contents }];
-  }
-  if (Array.isArray(contents)) {
-    return contents.map((c: any) => {
-      const role = c.role === 'model' ? 'assistant' : 'user';
-      const text = c.parts ? c.parts.map((p: any) => p.text).join('\n') : JSON.stringify(c);
-      return { role, content: text };
-    });
-  }
-  return [{ role: 'user', content: JSON.stringify(contents) }];
+// ---------------------------------------------------------------------------
+// Model configuration (readable by the orchestrator)
+// ---------------------------------------------------------------------------
+
+export const MODEL_CONFIG = {
+  primaryModel: "gemini-3.7-flash",
+  fallbackModel: "gemini-3.6-flash",
+  providerUrl: "https://generativelanguage.googleapis.com",
+} as const;
+
+// ---------------------------------------------------------------------------
+// Structured error shape returned when all retries/fallbacks are exhausted
+// ---------------------------------------------------------------------------
+
+export interface AIFailedResult {
+  isAIFailed: true;
+  reason: string;
+  text?: never;
 }
 
+export interface AISuccessResult {
+  isAIFailed?: false;
+  text: string;
+}
+
+export type AIResult = AISuccessResult | AIFailedResult;
+
+interface GenerateContentArgs {
+  model?: string;
+  contents: unknown;
+  config?: {
+    responseSchema?: Schema;
+    responseMimeType?: string;
+    temperature?: number;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function isRetryable(status: number): boolean {
+  return [408, 500, 502, 503, 504].includes(status);
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
+  const delays = [200, 400, 800];
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt <= delays.length; attempt++) {
+    try {
+      return await fn();
+    } catch (err: any) {
+      lastError = err;
+      const status = err?.status;
+      if (status != null && isRetryable(status) && attempt < delays.length) {
+        console.warn(
+          `[llm-client] ${label} attempt ${attempt + 1} failed with status ${status}. Retrying...`
+        );
+        await delay(delays[attempt]);
+        continue;
+      }
+      break;
+    }
+  }
+
+  throw lastError;
+}
+
+// ---------------------------------------------------------------------------
+// GoogleGenAI class wrapper
+// ---------------------------------------------------------------------------
+
 export class GoogleGenAI {
-  models: { generateContent: any, generateContentStream: any };
-  client: OpenAI;
+  readonly models: {
+    generateContent: (args: GenerateContentArgs) => Promise<AIResult>;
+    generateContentStream: (
+      args: GenerateContentArgs
+    ) => Promise<AsyncGenerator<{ text: string }>>;
+  };
 
-  constructor(opts: any) {
-    this.client = new OpenAI({
-      baseURL: "https://integrate.api.nvidia.com/v1",
-      apiKey: process.env.NVIDIA_API_KEY,
+  private readonly client: OfficialGoogleGenAI;
+
+  constructor(_opts?: unknown) {
+    this.client = new OfficialGoogleGenAI({
+      apiKey: process.env.GEMINI_API_KEY,
     });
-    
-    this.models = {
-      generateContent: async (args: any) => {
-        let messages = parseGeminiContents(args.contents);
-        
-        if (args.config?.responseSchema) {
-            messages.unshift({ 
-              role: "system", 
-              content: "You must respond strictly in valid JSON format. Your JSON must conform strictly to this schema: " + JSON.stringify(args.config.responseSchema) 
-            });
-        } else if (args.config?.responseMimeType === 'application/json') {
-            messages.unshift({ 
-              role: "system", 
-              content: "You must respond strictly in valid JSON format."
-            });
-        }
 
-        const completion = await this.client.chat.completions.create({
-          model: "deepseek-ai/deepseek-v4-pro-0813",
-          messages: messages,
-          temperature: args.config?.temperature ?? 1,
-          top_p: 0.95,
-          max_tokens: 16384,
-          seed: 42,
-          extra_body: { chat_template_kwargs: { thinking: false } }
-        } as any);
-
-        let text = completion.choices[0]?.message?.content || "";
-        if ((args.config?.responseSchema || args.config?.responseMimeType === 'application/json')) {
-            text = text.replace(/^```json\s*/, '').replace(/```$/, '').trim();
-        }
-
-        return { text };
-      },
+    const generateContent = async (
+      args: GenerateContentArgs
+    ): Promise<AIResult> => {
       
-      generateContentStream: async (args: any) => {
-         const messages = parseGeminiContents(args.contents);
-         const stream = await this.client.chat.completions.create({
-           model: "deepseek-ai/deepseek-v4-pro-0813",
-           messages: messages,
-           stream: true,
-           temperature: args.config?.temperature ?? 1,
-           top_p: 0.95,
-           max_tokens: 16384,
-           seed: 42,
-           extra_body: { chat_template_kwargs: { thinking: false } }
-         } as any);
+      const doGenerate = async (modelName: string) => {
+        return this.client.models.generateContent({
+          model: modelName,
+          contents: args.contents as any,
+          config: args.config as any,
+        });
+      };
 
-         async function* iterator() {
-            for await (const chunk of stream as any) {
-               yield { text: chunk.choices[0]?.delta?.content || "" };
-            }
-         }
-         return iterator();
+      try {
+        const response = await withRetry(
+          () => doGenerate(MODEL_CONFIG.primaryModel),
+          `generateContent[${MODEL_CONFIG.primaryModel}]`
+        );
+        return { text: response.text || "" };
+      } catch (primaryErr) {
+        console.error(`[llm-client] Primary model failed:`, primaryErr);
+      }
+
+      try {
+        const response = await withRetry(
+          () => doGenerate(MODEL_CONFIG.fallbackModel),
+          `generateContent[${MODEL_CONFIG.fallbackModel}]`
+        );
+        return { text: response.text || "" };
+      } catch (fallbackErr) {
+        const reason = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+        console.error(`[llm-client] Fallback model failed:`, fallbackErr);
+        return {
+          isAIFailed: true,
+          reason: `All models exhausted. Last error: ${reason}`,
+        };
       }
     };
+
+    const generateContentStream = async (
+      args: GenerateContentArgs
+    ): Promise<AsyncGenerator<{ text: string }>> => {
+      
+      const createStream = (modelName: string) => {
+        return this.client.models.generateContentStream({
+          model: modelName,
+          contents: args.contents as any,
+          config: args.config as any,
+        });
+      };
+
+      let stream: AsyncGenerator | null = null;
+      try {
+        stream = await withRetry(
+          () => Promise.resolve(createStream(MODEL_CONFIG.primaryModel)),
+          `generateContentStream[${MODEL_CONFIG.primaryModel}]`
+        );
+      } catch {
+        try {
+          stream = await withRetry(
+            () => Promise.resolve(createStream(MODEL_CONFIG.fallbackModel)),
+            `generateContentStream[${MODEL_CONFIG.fallbackModel}]`
+          );
+        } catch (err) {
+          const reason = err instanceof Error ? err.message : String(err);
+          async function* errorGen() {
+            yield { text: JSON.stringify({ isAIFailed: true, reason }) };
+          }
+          return errorGen();
+        }
+      }
+
+      async function* chunkGenerator(): AsyncGenerator<{ text: string }> {
+        if (!stream) return;
+        for await (const chunk of stream as any) {
+          yield { text: chunk.text || "" };
+        }
+      }
+
+      return chunkGenerator();
+    };
+
+    this.models = { generateContent, generateContentStream };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// AI health check
+// ---------------------------------------------------------------------------
+
+export interface AIStatusResult {
+  healthy: boolean;
+  primaryModel: string;
+  fallbackModel: string;
+  provider: string;
+}
+
+export async function getAIStatus(): Promise<AIStatusResult> {
+  const base: Omit<AIStatusResult, "healthy"> = {
+    primaryModel: MODEL_CONFIG.primaryModel,
+    fallbackModel: MODEL_CONFIG.fallbackModel,
+    provider: MODEL_CONFIG.providerUrl,
+  };
+
+  try {
+    const client = new OfficialGoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    // Minimal check: try to fetch a model info
+    await client.models.get({ model: MODEL_CONFIG.primaryModel });
+    return { healthy: true, ...base };
+  } catch (err) {
+    console.error("[llm-client] getAIStatus failed:", err);
+    return { healthy: false, ...base };
   }
 }
