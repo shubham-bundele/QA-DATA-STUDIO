@@ -105,7 +105,16 @@ const CATEGORY_CONFIG: Record<DataCategory, { label: string; icon: typeof Sparkl
 }
 
 export default function SchemaPage() {
-  const [schemaInput, setSchemaInput] = useState("")
+  const [schemaInput, setSchemaInput] = useState(`{
+  "type": "object",
+  "properties": {
+    "user_id": { "type": "string", "format": "uuid" },
+    "username": { "type": "string", "minLength": 3, "maxLength": 20 },
+    "age": { "type": "integer", "minimum": 18, "maximum": 99 },
+    "is_active": { "type": "boolean" }
+  },
+  "required": ["user_id", "username", "age"]
+}`)
   const [inputFormat, setInputFormat] = useState<InputFormat>("json-schema")
   const [categories, setCategories] = useState<DataCategory[]>(["positive", "negative", "boundary", "security"])
   const [recordCount, setRecordCount] = useState(10)

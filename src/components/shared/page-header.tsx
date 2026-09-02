@@ -17,7 +17,7 @@ export function PageHeader({ title, description, children }: PageHeaderProps) {
       transition={{ duration: 0.4, ease: [0.25, 0.46, 0.45, 0.94] }}
     >
       <div>
-        <h2 className="text-2xl font-semibold tracking-tight">{title}</h2>
+        <h2 className="text-2xl font-bold tracking-tight gradient-text">{title}</h2>
         <motion.div
           className="mt-1.5 h-0.5 rounded-full bg-gradient-to-r from-primary via-primary/60 to-transparent"
           initial={{ width: 0 }}

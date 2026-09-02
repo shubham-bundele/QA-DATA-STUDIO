@@ -17,6 +17,7 @@ import {
   Shield,
   Target,
   Zap,
+  Terminal,
 } from "lucide-react"
 import { toast } from "sonner"
 import { cn } from "@/lib/utils"
@@ -26,7 +27,11 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PageHeader } from "@/components/shared/page-header"
 import { EmptyState } from "@/components/shared/empty-state"
+import { ExportWebhookModal } from "@/components/export-webhook-modal"
+import { HistoryModal } from "@/components/history-modal"
+import { PlaywrightPreviewModal } from "@/components/playwright-preview-modal"
 import { useCopyToClipboard } from "@/hooks/use-copy-clipboard"
+import { saveStoryResult } from "@/core/db/history-db"
 
 // ---------------------------------------------------------------------------
 // Types (mirrors the engine's exported interfaces)
@@ -64,6 +69,24 @@ interface AnalysisResult {
     byDomain: Record<string, number>
     byPriority: Record<string, number>
   }
+  decomposition: {
+    actors: string[];
+    actions: string[];
+    preconditions: string[];
+    outcomes: string[];
+    edgeCases: string[];
+  }
+  gherkinFeatures: {
+    featureName: string;
+    scenarios: {
+      name: string;
+      type: string;
+      given: string;
+      when: string;
+      then: string;
+    }[];
+  }[]
+  recommendations: string[]
 }
 
 // ---------------------------------------------------------------------------
@@ -119,26 +142,22 @@ const PRIORITY_CONFIG: Record<string, string> = {
   low: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400",
 }
 
-const DOMAIN_ICONS: Record<string, typeof Sparkles> = {
-  "user-profile": ClipboardList,
-  banking: Shield,
-  "credit-card": Zap,
-  address: Target,
-  api: FlaskConical,
-  security: Shield,
-}
+
 
 // ---------------------------------------------------------------------------
 // Page Component
 // ---------------------------------------------------------------------------
 
 export default function TestCasesPage() {
-  const [storyInput, setStoryInput] = useState("")
+  const [storyInput, setStoryInput] = useState("As a bank customer, I want to transfer money to another account so that I can pay my bills. The transfer should fail if my balance is insufficient, or if the destination account is invalid. It should succeed and deduct the amount if everything is correct.")
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [isAnalyzing, setIsAnalyzing] = useState(false)
   const [duration, setDuration] = useState<number | undefined>()
   const [activeTab, setActiveTab] = useState("all")
   const [error, setError] = useState("")
+  const [showWebhookModal, setShowWebhookModal] = useState(false)
+  const [showHistoryModal, setShowHistoryModal] = useState(false)
+  const [showPlaywrightModal, setShowPlaywrightModal] = useState(false)
   const { copy, copied } = useCopyToClipboard()
 
   // -- Load sample story --------------------------------------------------
@@ -153,6 +172,14 @@ export default function TestCasesPage() {
     }
   }, [])
 
+  const loadHistoryResult = useCallback((pastResult: AnalysisResult) => {
+    setResult(pastResult)
+    setStoryInput(pastResult.userStory || "")
+    setActiveTab("all")
+    setDuration(0) // Loaded from history
+    setError("")
+  }, [])
+
   // -- Analyze -------------------------------------------------------------
 
   async function handleAnalyze() {
@@ -165,15 +192,29 @@ export default function TestCasesPage() {
     const start = performance.now()
 
     try {
-      // @ts-ignore - module not yet implemented
-      const { analyzeUserStory } = await import(
-        "@/core/engines/user-story-analyzer"
-      )
-      const analysis = analyzeUserStory(trimmed)
+      const res = await fetch('/api/analyze-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ story: trimmed })
+      })
+      
+      if (!res.ok) {
+        const errorData = await res.json().catch(() => ({}))
+        throw new Error(errorData.error || 'Server error during analysis')
+      }
+      
+      const analysis = await res.json()
       const elapsed = Math.round(performance.now() - start)
       setResult(analysis)
       setDuration(elapsed)
       setActiveTab("all")
+      
+      try {
+        await saveStoryResult(analysis)
+      } catch (e) {
+        console.error("Failed to save to history", e)
+      }
+      
       toast.success(
         `Generated ${analysis.summary.totalCases} test cases in ${elapsed}ms`
       )
@@ -227,6 +268,37 @@ export default function TestCasesPage() {
     URL.revokeObjectURL(url)
   }
 
+  function handleExportCSV() {
+    if (!result || !result.testCases) return
+    
+    // Standard CSV headers for Jira/Zephyr/TestRail
+    const headers = ["ID", "Title", "Preconditions", "Steps", "Expected Result", "Priority", "Category", "Domain"]
+    
+    const rows = result.testCases.map(tc => {
+      const steps = tc.gherkin.when.split(/ and /i).map((s, i) => `${i + 1}. ${s.trim()}`).join('\n')
+      
+      return [
+        tc.id,
+        tc.title,
+        tc.gherkin.given,
+        steps,
+        tc.gherkin.then,
+        tc.priority,
+        tc.category,
+        tc.domain
+      ].map(field => `"${(field || '').replace(/"/g, '""')}"`).join(',')
+    })
+
+    const csvContent = [headers.join(','), ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "test-cases.csv"
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
   // -- Derived data --------------------------------------------------------
 
   const filteredCases =
@@ -266,9 +338,19 @@ export default function TestCasesPage() {
             <CardContent className="space-y-4">
               {/* Sample buttons */}
               <div>
-                <label className="mb-2 block text-xs font-medium text-muted-foreground">
-                  Quick examples
-                </label>
+                <div className="mb-2 flex items-center justify-between">
+                  <label className="text-xs font-medium text-muted-foreground">
+                    Quick examples
+                  </label>
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="h-auto p-0 text-xs text-primary"
+                    onClick={() => setShowHistoryModal(true)}
+                  >
+                    View History
+                  </Button>
+                </div>
                 <div className="flex flex-wrap gap-1.5">
                   {Object.keys(SAMPLE_STORIES).map((key) => (
                     <Button
@@ -291,7 +373,7 @@ export default function TestCasesPage() {
                 placeholder="As a user, I want to register with my email and password so that I can access my account"
                 rows={7}
                 aria-label="User story input"
-                className="w-full rounded-md border border-input bg-muted/50 px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring resize-y"
+                className="w-full rounded-lg border border-input/60 bg-background/50 backdrop-blur-sm px-4 py-3 text-sm shadow-[inset_0_1px_2px_rgba(0,0,0,0.05)] transition-all duration-300 placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:border-primary/60 hover:border-border resize-y"
               />
 
               {/* Analyze button */}
@@ -442,7 +524,7 @@ export default function TestCasesPage() {
                       )}
 
                       {/* Spacer + Export buttons */}
-                      <div className="ml-auto flex items-center gap-2">
+                      <div className="ml-auto flex flex-wrap items-center gap-2 pt-2 sm:pt-0 w-full sm:w-auto justify-start sm:justify-end">
                         <Button
                           variant="outline"
                           size="sm"
@@ -465,79 +547,91 @@ export default function TestCasesPage() {
                           <Download className="h-3 w-3" />
                           JSON
                         </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 gap-1.5 text-xs"
+                          onClick={handleExportCSV}
+                        >
+                          <Download className="h-3 w-3" />
+                          CSV
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-7 gap-1.5 text-xs"
+                          onClick={() => setShowPlaywrightModal(true)}
+                        >
+                          <Terminal className="h-3 w-3" />
+                          Playwright
+                        </Button>
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="h-7 gap-1.5 text-xs bg-blue-600 hover:bg-blue-700"
+                          onClick={() => setShowWebhookModal(true)}
+                        >
+                          <Zap className="h-3 w-3" />
+                          Push to Jira
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
 
-                {/* ====== Detected Domains ====== */}
-                {result.detectedDomains.length > 0 && (
+                {/* ====== Story Decomposition ====== */}
+                {result.decomposition && (
                   <div>
                     <h3 className="mb-3 text-sm font-semibold tracking-tight">
-                      Detected Domains
+                      Story Decomposition
                     </h3>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-                      {result.detectedDomains.map((d) => {
-                        const DomainIcon =
-                          DOMAIN_ICONS[d.domain] ?? FlaskConical
-                        return (
-                          <Card
-                            key={d.domain}
-                            className="group relative overflow-hidden transition-colors hover:border-primary/40"
-                          >
-                            <CardContent className="flex items-start gap-3 py-4">
-                              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                                <DomainIcon className="h-4 w-4 text-primary" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center justify-between gap-2">
-                                  <span className="text-sm font-medium capitalize">
-                                    {d.domain.replace(/-/g, " ")}
-                                  </span>
-                                  <Badge
-                                    variant="secondary"
-                                    className="shrink-0 text-xs"
-                                  >
-                                    {Math.round(d.confidence * 100)}%
-                                  </Badge>
-                                </div>
-                                <div className="mt-1.5 flex flex-wrap gap-1">
-                                  {d.keywords.map((kw) => (
-                                    <span
-                                      key={kw}
-                                      className="inline-flex rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-                                    >
-                                      {kw}
-                                    </span>
-                                  ))}
-                                </div>
-                                <Link
-                                  href={d.generatorLink}
-                                  className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
-                                >
-                                  <LinkIcon className="h-3 w-3" />
-                                  Generate Test Data
-                                  <ChevronRight className="h-3 w-3" />
-                                </Link>
-                              </div>
-                            </CardContent>
-                          </Card>
-                        )
-                      })}
-                    </div>
+                    <Card>
+                      <CardContent className="grid gap-4 sm:grid-cols-2 p-4 text-sm">
+                        <div>
+                          <p className="font-semibold text-muted-foreground mb-1">Actors</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                            {result.decomposition.actors.map((a, i) => <li key={i}>{a}</li>)}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-muted-foreground mb-1">Actions</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                            {result.decomposition.actions.map((a, i) => <li key={i}>{a}</li>)}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-muted-foreground mb-1">Preconditions</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                            {result.decomposition.preconditions.map((a, i) => <li key={i}>{a}</li>)}
+                          </ul>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-muted-foreground mb-1">Outcomes</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                            {result.decomposition.outcomes.map((a, i) => <li key={i}>{a}</li>)}
+                          </ul>
+                        </div>
+                        <div className="sm:col-span-2">
+                          <p className="font-semibold text-muted-foreground mb-1">Edge Cases</p>
+                          <ul className="list-disc pl-4 space-y-1">
+                            {result.decomposition.edgeCases.map((a, i) => <li key={i}>{a}</li>)}
+                          </ul>
+                        </div>
+                      </CardContent>
+                    </Card>
                   </div>
                 )}
 
-                {/* ====== Test Cases ====== */}
+                {/* ====== Section 1: Structured Test Cases ====== */}
                 <div>
                   <h3 className="mb-3 text-sm font-semibold tracking-tight">
-                    Test Cases
+                    Section 1: Structured Test Cases
                   </h3>
                   <Tabs
                     value={activeTab}
                     onValueChange={setActiveTab}
                   >
-                    <TabsList>
+                    <TabsList className="mb-2 flex-wrap h-auto">
                       <TabsTrigger value="all">
                         All ({result.testCases.length})
                       </TabsTrigger>
@@ -581,11 +675,70 @@ export default function TestCasesPage() {
                     )}
                   </Tabs>
                 </div>
+
+                {/* ====== Section 2: Plain Text Test Cases ====== */}
+                {result.testCases && result.testCases.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold tracking-tight">
+                      Section 2: Plain Text Test Cases
+                    </h3>
+                    <Card>
+                      <CardContent className="p-0 overflow-hidden">
+                        <pre className="p-4 text-xs bg-muted/30 overflow-auto max-h-[400px]">
+                          {result.testCases.map(tc => {
+                            const precondition = tc.gherkin.given;
+                            const steps = tc.gherkin.when.split(/ and /i).map((s, i) => `  ${i + 1}. ${s.trim().charAt(0).toUpperCase() + s.trim().slice(1)}`);
+                            const expected = tc.gherkin.then;
+                            return `${tc.id}: ${tc.title}\n` +
+                                   `Preconditions: ${precondition}\n` +
+                                   `Steps:\n${steps.join("\n")}\n` +
+                                   `Expected Result: ${expected}\n`;
+                          }).join('\n')}
+                        </pre>
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
+
+                {/* ====== Section 3: Additional Recommendations ====== */}
+                {result.recommendations && result.recommendations.length > 0 && (
+                  <div>
+                    <h3 className="mb-3 text-sm font-semibold tracking-tight">
+                      Section 3: Additional Recommendations
+                    </h3>
+                    <Card>
+                      <CardContent className="p-4 text-sm space-y-2">
+                        {result.recommendations.map((rec, i) => (
+                          <div key={i} className="flex gap-2 items-start">
+                            <Sparkles className="h-4 w-4 shrink-0 text-primary mt-0.5" />
+                            <span>{rec}</span>
+                          </div>
+                        ))}
+                      </CardContent>
+                    </Card>
+                  </div>
+                )}
               </motion.div>
             )}
           </AnimatePresence>
         </motion.div>
       </div>
+
+      <ExportWebhookModal
+        open={showWebhookModal}
+        onOpenChange={setShowWebhookModal}
+        payload={result}
+      />
+      <HistoryModal
+        open={showHistoryModal}
+        onOpenChange={setShowHistoryModal}
+        onSelect={loadHistoryResult}
+      />
+      <PlaywrightPreviewModal
+        open={showPlaywrightModal}
+        onOpenChange={setShowPlaywrightModal}
+        payload={result}
+      />
     </div>
   )
 }
@@ -614,7 +767,10 @@ function TestCaseCard({
         <CardContent className="py-4">
           {/* Header row */}
           <div className="flex flex-wrap items-start justify-between gap-2">
-            <h4 className="text-sm font-semibold leading-snug">{tc.title}</h4>
+            <h4 className="text-sm font-semibold leading-snug">
+              <span className="text-muted-foreground mr-2 font-mono text-xs">{tc.id}</span>
+              {tc.title}
+            </h4>
             <div className="flex shrink-0 items-center gap-1.5">
               <Badge
                 variant="outline"

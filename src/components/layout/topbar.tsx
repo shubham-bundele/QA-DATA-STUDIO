@@ -27,17 +27,14 @@ export function Topbar() {
 
   return (
     <header
-      className={cn(
-        "sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/60",
-        collapsed ? "lg:pl-[calc(4rem+1.5rem)]" : "lg:pl-[calc(16rem+1.5rem)]"
-      )}
+      className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-background/80 px-4 sm:px-6 shadow-[0_1px_3px_rgba(0,0,0,0.04)] backdrop-blur-xl supports-[backdrop-filter]:bg-background/60"
       style={{ transition: "padding-left 300ms cubic-bezier(0.4,0,0.2,1)" }}
     >
       {/* Mobile menu button */}
       <Button
         variant="ghost"
         size="icon"
-        className="lg:hidden"
+        className="lg:hidden shrink-0"
         onClick={() => setMobileOpen(true)}
       >
         <Menu className="h-5 w-5" />
@@ -53,7 +50,7 @@ export function Topbar() {
             animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             exit={{ opacity: 0, y: -6, filter: "blur(4px)" }}
             transition={{ duration: 0.25, ease: [0.4, 0, 0.2, 1] }}
-            className="text-lg font-semibold tracking-tight"
+            className="text-lg font-semibold tracking-tight truncate"
           >
             {pageTitle}
           </motion.h1>

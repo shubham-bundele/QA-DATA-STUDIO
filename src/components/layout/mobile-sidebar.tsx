@@ -19,7 +19,7 @@ export function MobileSidebar() {
 
   return (
     <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-      <SheetContent side="left" className="w-72 p-0">
+      <SheetContent side="left" className="flex flex-col w-72 p-0">
         <SheetHeader className="border-b px-6 py-4">
           <SheetTitle>
             <Link
@@ -38,7 +38,7 @@ export function MobileSidebar() {
           </SheetTitle>
         </SheetHeader>
 
-        <nav className="px-3 py-4">
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
           {navSections.map((section, idx) => (
             <div key={section.title} className={cn(idx > 0 && "mt-6")}>
               <h3 className="mb-2 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">

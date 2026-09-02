@@ -14,6 +14,8 @@ import {
   ClipboardList,
   Settings,
   BrainCircuit,
+  FileText,
+  Activity,
   type LucideIcon,
 } from "lucide-react"
 
@@ -44,25 +46,96 @@ export const navSections: NavSection[] = [
     ],
   },
   {
-    title: "Intelligence",
+    title: "Intelligence & Testing",
     items: [
       {
         id: "schema",
-        label: "Schema Intelligence",
+        label: "Schema Analysis",
         href: "/schema",
         icon: BrainCircuit,
+      },
+      {
+        id: "api-analyzer",
+        label: "API Spec Analyzer",
+        href: "/schema-intelligence",
+        icon: FileJson,
       },
       {
         id: "test-cases",
         label: "Test Case Generator",
         href: "/test-cases",
-        icon: ClipboardList,
+        icon: FileText,
+      },
+      {
+        id: "automation-builder",
+        label: "Automation Builder",
+        href: "/automation-builder",
+        icon: FileCode, // Using FileCode instead of importing Wand2 to avoid missing import errors
+      },
+      {
+        id: "performance-tester",
+        label: "Performance Tester",
+        href: "/performance-tester",
+        icon: Activity,
+      },
+      {
+        id: "security-scanner",
+        label: "Security Scanner",
+        href: "/security-scanner",
+        icon: Shield, // Using Shield
+      },
+      {
+        id: "mock-server",
+        label: "Live Mock Server",
+        href: "/mock-server",
+        icon: Database, // Using Database
       },
     ],
   },
   {
+    title: "Enterprise",
+    items: [
+      {
+        id: "visual-regression",
+        label: "Visual Regression",
+        href: "/visual-regression",
+        icon: FileCode,
+      },
+      {
+        id: "accessibility-scanner",
+        label: "Accessibility Scanner",
+        href: "/accessibility-scanner",
+        icon: Shield,
+      },
+      {
+        id: "self-healing",
+        label: "AI Test Self-Healing",
+        href: "/self-healing",
+        icon: BrainCircuit,
+      },
+      {
+        id: "contract-testing",
+        label: "API Contract Testing",
+        href: "/contract-testing",
+        icon: FileJson,
+      },
+      {
+        id: "ci-cd-integration",
+        label: "CI/CD Webhooks",
+        href: "/ci-cd-integration",
+        icon: Globe,
+      }
+    ]
+  },
+  {
     title: "Generators",
     items: [
+      {
+        id: "database-seeder",
+        label: "Direct DB Seeder",
+        href: "/database-seeder",
+        icon: Database,
+      },
       {
         id: "user-profile",
         label: "User Profile",

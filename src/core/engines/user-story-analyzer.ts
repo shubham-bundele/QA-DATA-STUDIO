@@ -33,6 +33,25 @@ export interface DetectedDomain {
   generatorLink: string;
 }
 
+export interface DecomposedStory {
+  actors: string[];
+  actions: string[];
+  preconditions: string[];
+  outcomes: string[];
+  edgeCases: string[];
+}
+
+export interface GherkinFeature {
+  featureName: string;
+  scenarios: {
+    name: string;
+    type: "positive" | "negative" | "boundary" | "security";
+    given: string;
+    when: string;
+    then: string;
+  }[];
+}
+
 export interface AnalysisResult {
   userStory: string;
   detectedDomains: DetectedDomain[];
@@ -43,6 +62,9 @@ export interface AnalysisResult {
     byDomain: Record<string, number>;
     byPriority: Record<string, number>;
   };
+  decomposition: DecomposedStory;
+  gherkinFeatures: GherkinFeature[];
+  recommendations: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -2345,6 +2367,70 @@ function buildSummary(
 // Public API
 // ---------------------------------------------------------------------------
 
+function generateMockDecomposition(story: string): DecomposedStory {
+  const norm = story.toLowerCase();
+  
+  const actors = [];
+  if (norm.includes("user")) actors.push("User");
+  if (norm.includes("customer")) actors.push("Customer");
+  if (norm.includes("admin")) actors.push("Administrator");
+  if (norm.includes("developer")) actors.push("Developer");
+  if (actors.length === 0) actors.push("System User");
+
+  const actions = [];
+  if (norm.includes("register") || norm.includes("sign up") || norm.includes("account")) actions.push("Register for a new account");
+  if (norm.includes("login") || norm.includes("sign in")) actions.push("Authenticate to system");
+  if (norm.includes("checkout") || norm.includes("purchase") || norm.includes("payment")) actions.push("Complete checkout process");
+  if (norm.includes("api") || norm.includes("payload")) actions.push("Send API request");
+  if (actions.length === 0) actions.push("Perform requested workflow");
+
+  return {
+    actors,
+    actions,
+    preconditions: ["System is available", "Network connection is active"],
+    outcomes: ["User achieves their primary goal", "System state is updated successfully"],
+    edgeCases: ["Network failure during operation", "Invalid input data provided by user", "Concurrent operations causing conflicts"]
+  };
+}
+
+function generateGherkinFeatures(testCases: TestCase[]): GherkinFeature[] {
+  const featuresMap = new Map<string, GherkinFeature>();
+  
+  for (const tc of testCases) {
+    if (!featuresMap.has(tc.domain)) {
+      featuresMap.set(tc.domain, {
+        featureName: `${tc.domain.replace(/-/g, ' ').toUpperCase()} VALIDATION`,
+        scenarios: []
+      });
+    }
+    const feature = featuresMap.get(tc.domain)!;
+    feature.scenarios.push({
+      name: tc.title,
+      type: tc.category,
+      given: tc.gherkin.given,
+      when: tc.gherkin.when,
+      then: tc.gherkin.then
+    });
+  }
+  return Array.from(featuresMap.values());
+}
+
+function generateRecommendations(detectedDomains: DetectedDomain[]): string[] {
+  const recs = [
+    "Usability: Ensure error messages are clear and follow accessibility compliance (WCAG 2.1).",
+    "Performance: Validate response times under load, particularly during concurrent operations."
+  ];
+  const domains = detectedDomains.map(d => d.domain);
+  if (domains.includes("user-profile") || domains.includes("security")) {
+    recs.push("Security: Include rigorous security tests against SQL injection, brute force attempts, and session hijacking.");
+    recs.push("Boundary: Add boundary test cases for password length limits, special characters, and empty fields.");
+  }
+  if (domains.includes("credit-card") || domains.includes("banking") || domains.includes("address")) {
+    recs.push("Data-driven: Add data-driven tests for various geographic formats, boundary amounts, and edge-case datasets.");
+  }
+  return recs;
+}
+
 /**
  * Analyzes a user story string and produces structured test cases
  * with linked test data generator categories.
@@ -2352,15 +2438,6 @@ function buildSummary(
  * @param story - A user story string, typically in the format:
  *   "As a <role>, I want to <action> so that <benefit>"
  * @returns An AnalysisResult containing detected domains, test cases, and summary statistics.
- *
- * @example
- * ```ts
- * const result = analyzeUserStory(
- *   "As a user, I want to register with my email and password so I can access my dashboard"
- * );
- * console.log(result.detectedDomains);  // [{domain: "user-profile", confidence: 0.6, ...}]
- * console.log(result.testCases.length); // ~24 test cases
- * ```
  */
 export function analyzeUserStory(story: string): AnalysisResult {
   // Reset the global counter for each analysis run so IDs are deterministic
@@ -2379,5 +2456,8 @@ export function analyzeUserStory(story: string): AnalysisResult {
     detectedDomains,
     testCases,
     summary: buildSummary(testCases),
+    decomposition: generateMockDecomposition(story),
+    gherkinFeatures: generateGherkinFeatures(testCases),
+    recommendations: generateRecommendations(detectedDomains)
   };
 }
