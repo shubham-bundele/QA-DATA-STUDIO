@@ -1,21 +1,21 @@
 ﻿import { NextResponse } from 'next/server';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type, Schema } from "@/lib/llm-client";
 
 export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.NVIDIA_API_KEY) {
       return NextResponse.json(
-        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { error: 'Server configuration error: NVIDIA_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
         { status: 500 }
       );
     }
     const { imageUrl } = await req.json();
     if (!imageUrl) return NextResponse.json({ error: "Missing imageUrl" }, { status: 400 });
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: "GEMINI_API_KEY is not set." }, { status: 500 });
+    const apiKey = process.env.NVIDIA_API_KEY;
+    if (!apiKey) return NextResponse.json({ error: "NVIDIA_API_KEY is not set." }, { status: 500 });
 
     // Fetch the image to buffer
     const imgRes = await fetch(imageUrl);

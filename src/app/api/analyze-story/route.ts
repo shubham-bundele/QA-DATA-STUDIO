@@ -1,9 +1,9 @@
 ﻿import { NextResponse } from 'next/server';
-import { GoogleGenAI, Type, Schema } from '@google/genai';
+import { GoogleGenAI, Type, Schema } from "@/lib/llm-client";
 
 export const maxDuration = 60;
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const ai = new GoogleGenAI({ apiKey: process.env.NVIDIA_API_KEY });
 
 const resultSchema: Schema = {
   type: Type.OBJECT,
@@ -94,9 +94,9 @@ const resultSchema: Schema = {
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.GEMINI_API_KEY) {
+    if (!process.env.NVIDIA_API_KEY) {
       return NextResponse.json(
-        { error: 'Server configuration error: GEMINI_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
+        { error: 'Server configuration error: NVIDIA_API_KEY environment variable is missing. Please add it to your Vercel project settings.' },
         { status: 500 }
       );
     }
