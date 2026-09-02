@@ -49,7 +49,7 @@ export function extractFallbackLocators(html: string): any[] {
   
   // Extract data-testid
   const testIdRegex = /data-testid=["']([^"']+)["']/g;
-  let match;
+  let match: RegExpExecArray | null;
   while ((match = testIdRegex.exec(html)) !== null) {
     locators.push({
       name: `Element_${match[1]}`,
@@ -63,11 +63,12 @@ export function extractFallbackLocators(html: string): any[] {
   // Extract id
   const idRegex = /id=["']([^"']+)["']/g;
   while ((match = idRegex.exec(html)) !== null) {
-    if (!locators.find(l => l.primary.includes(match[1]))) {
+    const idVal = match[1];
+    if (!locators.find(l => l.primary.includes(idVal))) {
       locators.push({
-        name: `Element_${match[1]}`,
-        primary: `#${match[1]}`,
-        fallback: `//*[@id="${match[1]}"]`,
+        name: `Element_${idVal}`,
+        primary: `#${idVal}`,
+        fallback: `//*[@id="${idVal}"]`,
         score: 80,
         reason: "Extracted via local fallback orchestrator (id)"
       });
