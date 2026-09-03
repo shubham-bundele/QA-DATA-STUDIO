@@ -108,12 +108,12 @@ document.addEventListener('DOMContentLoaded', () => {
           .qa-breadcrumb { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px; background: #18181b; border-radius: 6px; border: 1px solid #27272a; align-items: center; }
           .qa-breadcrumb-item { color: #60a5fa; cursor: pointer; font-size: 11px; font-family: monospace; transition: color 0.2s; }
           .qa-breadcrumb-item:hover { color: #93c5fd; text-decoration: underline; }
-          .qa-select { background: #18181b; color: #f4f4f5; border: 1px solid #3f3f46; border-radius: 4px; padding: 4px 8px; font-size: 11px; outline: none; }
-          .qa-input { flex: 1; background: #18181b; color: #f4f4f5; border: 1px solid #3f3f46; border-radius: 4px; padding: 6px 8px; font-size: 11px; font-family: monospace; outline: none; }
-          .qa-input:focus { border-color: #f59e0b; }
-          .qa-btn { background: #f59e0b; color: #09090b; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; }
-          .qa-btn:hover { background: #fbbf24; }
-          .qa-raw-input { background: transparent; border: none; color: #a1a1aa; font-family: monospace; font-size: 11px; outline: none; }
+          .qa-select { background: #18181b !important; color: #f4f4f5 !important; border: 1px solid #3f3f46 !important; border-radius: 4px !important; padding: 4px 8px !important; font-size: 11px !important; outline: none !important; }
+          .qa-input { flex: 1 !important; background: #18181b !important; color: #f4f4f5 !important; border: 1px solid #3f3f46 !important; border-radius: 4px !important; padding: 6px 8px !important; font-size: 11px !important; font-family: monospace !important; outline: none !important; }
+          .qa-input:focus { border-color: #f59e0b !important; }
+          .qa-btn { background: #f59e0b !important; color: #09090b !important; border: none !important; padding: 6px 12px !important; border-radius: 4px !important; font-size: 11px !important; font-weight: 600 !important; cursor: pointer !important; }
+          .qa-btn:hover { background: #fbbf24 !important; }
+          .qa-raw-input { background: #18181b !important; border: 1px solid #27272a !important; padding: 4px 6px !important; border-radius: 4px !important; color: #a1a1aa !important; font-family: monospace !important; font-size: 11px !important; outline: none !important; }
           .qa-playground-match { outline: 2px solid #ec4899 !important; background-color: rgba(236, 72, 153, 0.2) !important; }
         `
       });
