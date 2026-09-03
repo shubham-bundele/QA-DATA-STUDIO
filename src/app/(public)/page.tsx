@@ -87,39 +87,21 @@ export default function HomePage() {
   const statsRef = useRef(null)
   const ctaRef   = useRef(null)
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  
   const toolsInView = useInView(toolsRef, { once: true, margin: "-80px" })
   const statsInView = useInView(statsRef, { once: true, margin: "-50px" })
   const ctaInView   = useInView(ctaRef,   { once: true, margin: "-80px" })
 
   useEffect(() => {
-    const handleScroll = () => {
-      if (!iframeRef.current?.contentWindow) return
-      const max = document.documentElement.scrollHeight - window.innerHeight
-      const val = max > 0 ? Math.max(0, Math.min(1, window.scrollY / max)) : 0
-      iframeRef.current.contentWindow.postMessage({ type: 'scroll', value: val }, '*')
-    }
     const handleMouseMove = (e: MouseEvent) => {
       if (!iframeRef.current?.contentWindow) return
       const x = (e.clientX / window.innerWidth) * 2 - 1
       const y = -((e.clientY / window.innerHeight) * 2 - 1)
       iframeRef.current.contentWindow.postMessage({ type: 'mousemove', x, y }, '*')
     }
-    const handleMouseOut = () => {
-      if (!iframeRef.current?.contentWindow) return
-      iframeRef.current.contentWindow.postMessage({ type: 'mouseout' }, '*')
-    }
-
-    window.addEventListener('scroll', handleScroll, { passive: true })
     window.addEventListener('mousemove', handleMouseMove, { passive: true })
-    window.addEventListener('mouseout', handleMouseOut, { passive: true })
-    
-    // Trigger initial scroll state
-    handleScroll()
-
     return () => {
-      window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('mousemove', handleMouseMove)
-      window.removeEventListener('mouseout', handleMouseOut)
     }
   }, [])
 
@@ -127,9 +109,9 @@ export default function HomePage() {
     <div className="flex flex-col overflow-x-hidden relative">
       <iframe 
         ref={iframeRef}
-        src="/storm.html" 
+        src="/vanta-network.html" 
         className="fixed inset-0 z-[-10] h-full w-full border-none pointer-events-none"
-        title="Background Storm"
+        title="Vanta Network Background"
       />
 
       {/* HERO */}

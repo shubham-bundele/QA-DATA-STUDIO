@@ -4,90 +4,265 @@
   <meta charset="UTF-8">
   <title>QA Data Studio AI</title>
   <style>
+    :root {
+      --bg: #09090b;
+      --card-bg: #18181b;
+      --card-hover: #27272a;
+      --border: #27272a;
+      --text-main: #f4f4f5;
+      --text-muted: #a1a1aa;
+      --primary: #7c3aed; /* purple */
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      width: 320px;
+      width: 340px;
       margin: 0;
-      padding: 16px;
-      background-color: #f9fafb;
-      color: #111827;
+      padding: 0;
+      background-color: var(--bg);
+      color: var(--text-main);
     }
-    h1 {
+
+    /* Fancy gradient top bar */
+    .top-glow {
+      height: 3px;
+      width: 100%;
+      background: linear-gradient(90deg, #3b82f6, #8b5cf6, #ec4899);
+    }
+
+    .container {
+      padding: 16px;
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header svg {
+      color: var(--primary);
+    }
+
+    .header h1 {
       font-size: 16px;
       font-weight: 600;
-      margin-top: 0;
-      margin-bottom: 16px;
+      margin: 0;
+      letter-spacing: -0.02em;
+    }
+
+    .action-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      width: 100%;
+      padding: 12px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-main);
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background-color: var(--card-hover);
+      border-color: #3f3f46;
+      transform: translateY(-1px);
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .action-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 6px;
+      background-color: rgba(124, 58, 237, 0.1);
+      color: var(--primary);
+    }
+
+    .action-text {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .action-title {
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .action-desc {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Specific Icon Colors */
+    .btn-fill .action-icon { color: #3b82f6; background-color: rgba(59, 130, 246, 0.1); }
+    .btn-inspect .action-icon { color: #f59e0b; background-color: rgba(245, 158, 11, 0.1); }
+    .btn-record .action-icon { color: #ef4444; background-color: rgba(239, 68, 68, 0.1); }
+    .btn-scan .action-icon { color: #8b5cf6; background-color: rgba(139, 92, 246, 0.1); }
+    .btn-security .action-icon { color: #10b981; background-color: rgba(16, 185, 129, 0.1); }
+    .btn-bug .action-icon { color: #ec4899; background-color: rgba(236, 72, 153, 0.1); }
+
+    .status-container {
+      margin-top: 16px;
+      padding: 10px;
+      background-color: rgba(39, 39, 42, 0.5);
+      border-radius: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
       display: flex;
       align-items: center;
       gap: 8px;
     }
-    .btn {
-      display: block;
-      width: 100%;
-      padding: 10px;
-      margin-bottom: 8px;
-      background-color: #4f46e5;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
+
+    .status-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #10b981; /* Green ready state */
+    }
+
+    .status-indicator.busy {
+      background-color: #f59e0b;
+      animation: pulse 1.5s infinite;
+    }
+
+    .status-indicator.error {
+      background-color: #ef4444;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 1; }
+      50% { opacity: 0.4; }
+      100% { opacity: 1; }
+    }
+
+    .footer {
+      margin-top: 16px;
       text-align: center;
-      transition: background-color 0.2s;
+      font-size: 10px;
+      color: #52525b;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
     }
-    .btn:hover {
-      background-color: #4338ca;
-    }
-    .btn:disabled {
-      background-color: #9ca3af;
-      cursor: not-allowed;
-    }
-    .status {
-      font-size: 12px;
-      color: #6b7280;
-      margin-top: 8px;
-      text-align: center;
-    }
-    .toggle-container {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 12px;
-      padding: 10px;
-      background: white;
-      border-radius: 6px;
-      border: 1px solid #e5e7eb;
-    }
-    .toggle-label {
-      font-size: 14px;
-      font-weight: 500;
+    
+    .footer span {
+      color: #a1a1aa;
+      font-weight: 600;
     }
   </style>
 </head>
 <body>
-  <h1>
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M12 2a10 10 0 1 0 10 10H12V2Z"/>
-      <path d="M12 12 2.1 7.1"/>
-      <path d="M12 12l9.9 4.9"/>
-    </svg>
-    QA Data Studio
-  </h1>
+  <div class="top-glow"></div>
+  <div class="container">
+    
+    <div class="header">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2a10 10 0 1 0 10 10H12V2Z"/>
+        <path d="M12 12 2.1 7.1"/>
+        <path d="M12 12l9.9 4.9"/>
+      </svg>
+      <h1>QA Data Studio</h1>
+    </div>
 
-  <div class="toggle-container">
-    <span class="toggle-label">Smart Form Filler</span>
-    <button id="fill-form-btn" class="btn" style="width: auto; margin-bottom: 0;">Fill Now</button>
+    <div class="action-list">
+      
+      <button id="fill-form-btn" class="action-btn btn-fill">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+        </div>
+        <div class="action-text">
+          <span class="action-title">Smart Form Filler</span>
+          <span class="action-desc">AI auto-fills inputs with dummy data</span>
+        </div>
+      </button>
+
+      <button id="inspector-btn" class="action-btn btn-inspect">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></svg>
+        </div>
+        <div class="action-text">
+          <span class="action-title">Locator Inspector</span>
+          <span class="action-desc">Point & click to generate selectors</span>
+        </div>
+      </button>
+
+      <button id="recorder-btn" class="action-btn btn-record">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>
+        </div>
+        <div class="action-text">
+          <span class="action-title">AI Test Recorder</span>
+          <span class="action-desc">Record browser actions to Playwright</span>
+        </div>
+      </button>
+
+      <button id="scanner-btn" class="action-btn btn-scan">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></svg>
+        </div>
+        <div class="action-text">
+          <span class="action-title">Run A11y Scan</span>
+          <span class="action-desc">Scan current page for accessibility</span>
+        </div>
+      </button>
+
+      <button id="security-btn" class="action-btn btn-security">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/></svg>
+        </div>
+        <div class="action-text">
+          <span class="action-title">Security Scanner</span>
+          <span class="action-desc">Check for XSS, SQLi & OWASP flaws</span>
+        </div>
+      </button>
+
+      <button id="bug-btn" class="action-btn btn-bug">
+        <div class="action-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m8 2 1.88 1.88"/><path d="M14.12 3.88 16 2"/><path d="M9 7.13v-1a3.003 3.003 0 1 1 6 0v1"/><path d="M12 20c-3.3 0-6-2.7-6-6v-3a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v3c0 3.3-2.7 6-6 6"/><path d="M12 20v-9"/><path d="M6.53 9C4.6 8.8 3 7.1 3 5"/><path d="M17.47 9c1.93-.2 3.53-1.9 3.53-4"/></svg>
+        </div>
+        <div class="action-text">
+          <span class="action-title">Report Visual Bug</span>
+          <span class="action-desc">Capture screenshot & log defect</span>
+        </div>
+      </button>
+
+    </div>
+
+    <div class="status-container">
+      <div id="status-indicator" class="status-indicator"></div>
+      <span id="status">Ready</span>
+    </div>
+
+    <div class="footer">
+      Developed by <span>SHUBHAM BUNDELE</span>
+    </div>
+
   </div>
-
-  <button id="inspector-btn" class="btn">Start Locator Inspector</button>
-  <button id="recorder-btn" class="btn">Start AI Test Recorder</button>
-  <button id="scanner-btn" class="btn">Run A11y Scan</button>
-  <button id="bug-btn" class="btn">Report Visual Bug</button>
-  
-  <div id="status" class="status">Ready</div>
 
   <script src="popup.js"></script>
 </body>
 </html>
-

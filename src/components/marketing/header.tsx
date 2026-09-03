@@ -152,7 +152,7 @@ export function MarketingHeader() {
                     exit={{ opacity: 0, y: -10, scale: 0.95 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     className={cn(
-                      "pointer-events-auto overflow-hidden rounded-3xl border border-border/50 bg-background/80 p-2 backdrop-blur-3xl shadow-2xl",
+                      "pointer-events-auto overflow-hidden rounded-3xl border border-border/50 bg-zinc-950 p-2 shadow-2xl",
                       activeNavItem.width
                     )}
                     onMouseEnter={() => handleMouseEnter(activeTab!)} // Keep open while hovering panel

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Shield, Play, Loader2, AlertTriangle, CheckCircle, ShieldAlert, Terminal, Sparkles } from "lucide-react"
 import { PageHeader } from "@/components/shared/page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -25,6 +25,16 @@ export default function SecurityScannerPage() {
   const [method, setMethod] = useState("GET")
   const [isScanning, setIsScanning] = useState(false)
   const [logs, setLogs] = useState<Log[]>([])
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search)
+      const targetUrl = params.get('targetUrl')
+      if (targetUrl) {
+        setUrl(targetUrl)
+      }
+    }
+  }, [])
   
   const [isAiModalOpen, setIsAiModalOpen] = useState(false)
   const [selectedVulnerability, setSelectedVulnerability] = useState("")

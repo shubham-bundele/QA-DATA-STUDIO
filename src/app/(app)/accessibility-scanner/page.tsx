@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { PageHeader } from "@/components/shared/page-header"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -55,6 +55,33 @@ export default function AccessibilityScannerPage() {
   }
 
   const contrastRatio = getContrastRatio(fgColor, bgColor)
+
+  useEffect(() => {
+    // Check if we were redirected from the Chrome Extension
+    if (typeof window !== 'undefined' && window.location.search.includes('fromExtension=true')) {
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data && event.data.type === 'A11Y_SCAN_RESULTS') {
+          setResults(event.data.payload)
+          const urlToSet = event.data.payload.targetUrl || event.data.payload.url;
+          if (urlToSet && urlToSet !== 'about:blank') {
+            setUrl(urlToSet)
+          } else {
+            setUrl("Scanned from Chrome Extension")
+          }
+          // Do NOT set isReportView=true, because we want the interactive detailed view with AI healing
+          window.removeEventListener('message', handleMessage)
+        }
+      }
+      window.addEventListener('message', handleMessage)
+
+      // Give the content script (bridge.js) a moment to inject, then ask for the data
+      setTimeout(() => {
+        window.postMessage({ type: 'A11Y_REQUEST_DATA' }, '*')
+      }, 500)
+
+      return () => window.removeEventListener('message', handleMessage)
+    }
+  }, [])
 
   const handleScan = async () => {
     if (!url) return

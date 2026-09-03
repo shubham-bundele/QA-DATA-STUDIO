@@ -1,0 +1,1 @@
+fetch('http://localhost:3000/api/analyze-schema', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({schema: JSON.stringify({paths: {'/products': {get: {}}}}) })}).then(r => r.json()).then(d => console.log(JSON.stringify(d, null, 2))).catch(console.error);
