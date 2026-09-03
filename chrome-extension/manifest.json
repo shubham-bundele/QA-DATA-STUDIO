@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "QA Data Studio AI",
+  "version": "1.0.0",
+  "description": "AI-powered test recorder, smart form filler, and locator inspector for QA Data Studio.",
+  "action": {
+    "default_popup": "popup/popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "scripting",
+    "storage"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/service-worker.js"
+  }
+}
+
