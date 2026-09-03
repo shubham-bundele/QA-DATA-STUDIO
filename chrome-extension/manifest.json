@@ -3,6 +3,9 @@
   "name": "QA Data Studio AI",
   "version": "1.0.0",
   "description": "AI-powered test recorder, smart form filler, and locator inspector for QA Data Studio.",
+  "icons": {
+    "128": "icons/icon-128.png"
+  },
   "action": {
     "default_popup": "popup/popup.html"
   },
