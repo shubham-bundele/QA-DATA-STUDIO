@@ -28,6 +28,11 @@ Respond ONLY with valid JSON. Do not include markdown blocks like \`\`\`json.
       model: MODEL_CONFIG.primaryModel,
       contents: prompt,
     });
+
+    if (response.isAIFailed) {
+      console.error("AI Generation Failed:", response.reason);
+      return NextResponse.json({ error: "AI Generation Failed" }, { status: 500 });
+    }
     
     // Parse the JSON response safely
     let parsedData = [];

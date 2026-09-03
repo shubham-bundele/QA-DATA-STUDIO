@@ -44,6 +44,11 @@ Respond ONLY with the markdown text.
         }
       ]
     });
+
+    if (response.isAIFailed) {
+      console.error("AI Generation Failed:", response.reason);
+      return NextResponse.json({ error: "AI Generation Failed" }, { status: 500 });
+    }
     
     const bugReport = response.text || "";
 
