@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { GoogleGenAI, MODEL_CONFIG } from "@/lib/llm-client";
+import { GoogleGenAI } from "@/lib/llm-client";
 
 export const maxDuration = 60; // Allow enough time for vision analysis
 
@@ -48,7 +48,7 @@ Respond ONLY with the markdown text.
     const bugReport = response.text || "";
 
     return NextResponse.json({ success: true, data: bugReport });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Extension report-bug API Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }

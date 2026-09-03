@@ -35,13 +35,13 @@ Respond ONLY with valid JSON. Do not include markdown blocks like \`\`\`json.
       const responseText = response.text || "";
       const cleanJson = responseText.replace(/^```json\s*/, '').replace(/```\s*$/, '').trim();
       parsedData = JSON.parse(cleanJson);
-    } catch (e) {
+    } catch (_e) {
       console.error("Failed to parse AI form fill response:", response.text);
       return NextResponse.json({ error: "AI returned invalid JSON" }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, data: parsedData });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Extension fill-form API Error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
