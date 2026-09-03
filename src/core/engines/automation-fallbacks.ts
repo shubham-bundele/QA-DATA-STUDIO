@@ -51,7 +51,6 @@ export function extractFallbackLocators(html: string): any[] {
   const testIdRegex = /data-testid=["']([^"']+)["']/g;
   let match: RegExpExecArray | null;
   while ((match = testIdRegex.exec(html)) !== null) {
-  for (const match of Array.from(html.matchAll(testIdRegex))) {
     locators.push({
       name: `Element_${match[1]}`,
       primary: `[data-testid="${match[1]}"]`,
@@ -64,7 +63,6 @@ export function extractFallbackLocators(html: string): any[] {
   // Extract id
   const idRegex = /id=["']([^"']+)["']/g;
   while ((match = idRegex.exec(html)) !== null) {
-  for (const match of Array.from(html.matchAll(idRegex))) {
     const idVal = match[1];
     if (!locators.find(l => l.primary.includes(idVal))) {
       locators.push({

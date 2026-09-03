@@ -36,6 +36,7 @@ const scaleIn = {
 const tools = [
   { icon: BrainCircuit,  title: "AI Automation Builder",  href: "/automation-builder",    badge: "QA AI",        color: "from-blue-500/20 to-cyan-500/20",      ic: "text-blue-400",    bg: "bg-blue-500/10" },
   { icon: Code2,         title: "VS Code Extension",      href: "/vscode-extension",      badge: "Plugin",       color: "from-blue-500/20 to-indigo-500/20",    ic: "text-blue-400",    bg: "bg-blue-500/10" },
+  { icon: Sparkles,      title: "Chrome Extension",       href: "/chrome-extension",      badge: "Browser",      color: "from-orange-500/20 to-amber-500/20",   ic: "text-orange-400",  bg: "bg-orange-500/10" },
   { icon: Activity,      title: "Performance Tester",     href: "/performance-tester",    badge: "Load Testing", color: "from-green-500/20 to-emerald-500/20",   ic: "text-green-400",   bg: "bg-green-500/10" },
   { icon: Shield,        title: "Security Scanner",       href: "/security-scanner",      badge: "SecOps",       color: "from-red-500/20 to-rose-500/20",        ic: "text-red-400",     bg: "bg-red-500/10" },
   { icon: Database,      title: "Live Mock Server",       href: "/mock-server",           badge: "Dev Tools",    color: "from-purple-500/20 to-fuchsia-500/20",  ic: "text-purple-400",  bg: "bg-purple-500/10" },
@@ -85,22 +86,57 @@ export default function HomePage() {
   const toolsRef = useRef(null)
   const statsRef = useRef(null)
   const ctaRef   = useRef(null)
+  const iframeRef = useRef<HTMLIFrameElement>(null)
   const toolsInView = useInView(toolsRef, { once: true, margin: "-80px" })
   const statsInView = useInView(statsRef, { once: true, margin: "-50px" })
   const ctaInView   = useInView(ctaRef,   { once: true, margin: "-80px" })
 
+  useEffect(() => {
+    const handleScroll = () => {
+      if (!iframeRef.current?.contentWindow) return
+      const max = document.documentElement.scrollHeight - window.innerHeight
+      const val = max > 0 ? Math.max(0, Math.min(1, window.scrollY / max)) : 0
+      iframeRef.current.contentWindow.postMessage({ type: 'scroll', value: val }, '*')
+    }
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!iframeRef.current?.contentWindow) return
+      const x = (e.clientX / window.innerWidth) * 2 - 1
+      const y = -((e.clientY / window.innerHeight) * 2 - 1)
+      iframeRef.current.contentWindow.postMessage({ type: 'mousemove', x, y }, '*')
+    }
+    const handleMouseOut = () => {
+      if (!iframeRef.current?.contentWindow) return
+      iframeRef.current.contentWindow.postMessage({ type: 'mouseout' }, '*')
+    }
+
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('mousemove', handleMouseMove, { passive: true })
+    window.addEventListener('mouseout', handleMouseOut, { passive: true })
+    
+    // Trigger initial scroll state
+    handleScroll()
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseout', handleMouseOut)
+    }
+  }, [])
+
   return (
-    <div className="flex flex-col overflow-x-hidden">
+    <div className="flex flex-col overflow-x-hidden relative">
+      <iframe 
+        ref={iframeRef}
+        src="/storm.html" 
+        className="fixed inset-0 z-[-10] h-full w-full border-none pointer-events-none"
+        title="Background Storm"
+      />
 
       {/* HERO */}
       <section className="relative flex min-h-[92vh] items-center justify-center overflow-hidden px-4">
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/4 top-1/4 h-[560px] w-[560px] rounded-full bg-primary/[0.08] blur-[130px] animate-float" />
-          <div className="absolute right-1/4 bottom-1/4 h-[420px] w-[420px] rounded-full bg-chart-2/[0.08] blur-[130px] animate-float animation-delay-300" />
-          <div className="absolute left-1/2 top-1/2 h-[300px] w-[300px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-violet-500/[0.05] blur-[100px] animate-float animation-delay-700" />
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:64px_64px]" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_60%_at_50%_50%,transparent_30%,hsl(var(--background))_80%)]" />
-        </div>
+        {/* We can remove the old background gradients since Storm replaces them, 
+            but we keep a dark overlay to ensure text is visible */}
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-black/40" />
 
         <motion.div className="mx-auto max-w-4xl text-center" initial="hidden" animate="visible" variants={stagger}>
           <motion.div variants={fadeUp} className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary backdrop-blur-sm">
@@ -118,7 +154,7 @@ export default function HomePage() {
             Generate test data, run load tests with SSO/2FA, scan for vulnerabilities, mock APIs, and automate your entire QA pipeline in one platform.
           </motion.p>
 
-          <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+          <motion.div variants={fadeUp} className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap">
             <Button asChild size="lg" className="group gap-2 px-8 text-base shadow-lg shadow-primary/25 transition-all hover:shadow-xl hover:shadow-primary/35">
               <Link href="/dashboard">
                 <Zap className="h-4 w-4 transition-transform group-hover:rotate-12" />
@@ -137,6 +173,12 @@ export default function HomePage() {
                 <Code2 className="h-4 w-4" />
                 Download VS Code Extension
               </a>
+            </Button>
+            <Button asChild variant="outline" size="lg" className="gap-2 px-8 text-base border-orange-500/30 text-orange-400 hover:bg-orange-500/10 backdrop-blur-sm hover-glow">
+              <Link href="/chrome-extension">
+                <Sparkles className="h-4 w-4" />
+                Get Chrome Extension
+              </Link>
             </Button>
           </motion.div>
 

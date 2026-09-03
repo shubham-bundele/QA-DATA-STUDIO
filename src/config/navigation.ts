@@ -77,6 +77,12 @@ export const navSections: NavSection[] = [
         label: "VS Code Extension",
         href: "/vscode-extension",
         icon: FileCode,
+      },
+      {
+        id: "chrome-extension",
+        label: "Chrome Extension",
+        href: "/chrome-extension",
+        icon: Globe,
         badge: "New",
       },
       {

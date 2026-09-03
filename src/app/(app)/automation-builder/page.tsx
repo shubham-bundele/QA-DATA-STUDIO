@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { PageHeader } from "@/components/shared/page-header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
@@ -15,13 +16,16 @@ import { toast } from "sonner"
 
 type Step = 'STORY' | 'CLARIFY' | 'LOCATORS' | 'GENERATE'
 
-export default function AutomationBuilderPage() {
+function AutomationBuilderContent() {
+  const searchParams = useSearchParams()
+  const initialStory = searchParams.get('story') || ""
+
   const [step, setStep] = useState<Step>('STORY')
   const [framework, setFramework] = useState("Playwright (TypeScript)")
   const [isGenerating, setIsGenerating] = useState(false)
 
   // Step 1 State
-  const [story, setStory] = useState("")
+  const [story, setStory] = useState(initialStory)
   const [clarifications, setClarifications] = useState<string[]>([])
   const [clarificationAnswers, setClarificationAnswers] = useState<Record<number, string>>({})
 
@@ -364,3 +368,5 @@ export default function AutomationBuilderPage() {
     </div>
   )
 }
+
+export default function AutomationBuilderPage() { return <Suspense fallback={<div>Loading...</div>}><AutomationBuilderContent /></Suspense>; }

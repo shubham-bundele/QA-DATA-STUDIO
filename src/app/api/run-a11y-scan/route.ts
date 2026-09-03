@@ -11,17 +11,21 @@ export async function POST(req: Request) {
         { status: 500 }
       );
     }
-    const { url, wcagLevel = "wcag2aa" } = await req.json();
+    const { url, html, wcagLevel = "wcag2aa" } = await req.json();
 
-    if (!url) {
-      return NextResponse.json({ error: "Missing URL" }, { status: 400 });
+    if (!url && !html) {
+      return NextResponse.json({ error: "Missing URL or HTML" }, { status: 400 });
     }
 
     const browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ bypassCSP: true });
     const page = await context.newPage();
     
-    await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    if (url) {
+      await page.goto(url, { waitUntil: 'networkidle', timeout: 30000 });
+    } else {
+      await page.setContent(html, { waitUntil: 'networkidle' });
+    }
 
     await page.addScriptTag({ url: 'https://cdn.jsdelivr.net/npm/axe-core@4.13.0/axe.min.js' });
     
