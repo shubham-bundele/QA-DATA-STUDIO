@@ -75,11 +75,10 @@ export default function SettingsPage() {
     localStorage.setItem("qa-record-count", String(recordCount))
   }, [recordCount])
 
-  if (!isMounted) return null
-
-
   const [savingWorkspace, setSavingWorkspace] = useState(false)
   const [loadingWorkspace, setLoadingWorkspace] = useState(false)
+
+  if (!isMounted) return null
 
   const handleClearHistory = async () => {
     setClearing(true)

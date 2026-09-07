@@ -1,9 +1,20 @@
 /**
  * @file llm-client.ts
- * @description Resilient AI client that wraps the official @google/genai SDK
- * maintaining the application's fallback and error handling logic.
+ * @description Central AI Client - Unified interface for local and external AI providers.
+ * Now uses QA Data Studio's built-in Local AI Engine by default (no API keys required).
+ * Falls back to Google Gemini if configured and local engine fails.
  */
 
+// Local AI Engine (primary - no external dependencies)
+import { 
+  LocalGenAI, 
+  LocalGenerateContentArgs, 
+  LocalAIResult,
+  getAIStatus as localGetAIStatus,
+  MODEL_CONFIG as LOCAL_MODEL_CONFIG
+} from '@/core/ai/local-genai';
+
+// Google GenAI (fallback - requires API key)
 import { GoogleGenAI as OfficialGoogleGenAI } from "@google/genai";
 
 // ---------------------------------------------------------------------------
@@ -26,9 +37,9 @@ export type Schema = Record<string, unknown>;
 // ---------------------------------------------------------------------------
 
 export const MODEL_CONFIG = {
-  primaryModel: "gemini-3.7-flash",
-  fallbackModel: "gemini-3.6-flash",
-  providerUrl: "https://generativelanguage.googleapis.com",
+  primaryModel: LOCAL_MODEL_CONFIG.primaryModel,
+  fallbackModel: LOCAL_MODEL_CONFIG.fallbackModel,
+  providerUrl: LOCAL_MODEL_CONFIG.providerUrl,
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -48,6 +59,13 @@ export interface AISuccessResult {
 
 export type AIResult = AISuccessResult | AIFailedResult;
 
+export interface AIStatusResult {
+  healthy: boolean;
+  primaryModel: string;
+  fallbackModel: string;
+  provider: string;
+}
+
 interface GenerateContentArgs {
   model?: string;
   contents: unknown;
@@ -59,43 +77,7 @@ interface GenerateContentArgs {
 }
 
 // ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function isRetryable(status: number): boolean {
-  return [408, 500, 502, 503, 504].includes(status);
-}
-
-function delay(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-async function withRetry<T>(fn: () => Promise<T>, label: string): Promise<T> {
-  const delays = [200, 400, 800];
-  let lastError: unknown;
-
-  for (let attempt = 0; attempt <= delays.length; attempt++) {
-    try {
-      return await fn();
-    } catch (err: any) {
-      lastError = err;
-      const status = err?.status;
-      if (status != null && isRetryable(status) && attempt < delays.length) {
-        console.warn(
-          `[llm-client] ${label} attempt ${attempt + 1} failed with status ${status}. Retrying...`
-        );
-        await delay(delays[attempt]);
-        continue;
-      }
-      break;
-    }
-  }
-
-  throw lastError;
-}
-
-// ---------------------------------------------------------------------------
-// GoogleGenAI class wrapper
+// Unified AI Client - Uses Local Engine by default, falls back to Google
 // ---------------------------------------------------------------------------
 
 export class GoogleGenAI {
@@ -106,95 +88,145 @@ export class GoogleGenAI {
     ) => Promise<AsyncGenerator<{ text: string }>>;
   };
 
-  private readonly client: OfficialGoogleGenAI;
+  private localEngine: LocalGenAI;
+  private googleEngine?: OfficialGoogleGenAI;
+  private useGoogle = false;
 
-  constructor(_opts?: unknown) {
-    this.client = new OfficialGoogleGenAI({
-      apiKey: process.env.GEMINI_API_KEY,
-    });
+  constructor(_opts?: { apiKey?: string; preferLocal?: boolean }) {
+    // Initialize local engine (always available, no API key needed)
+    this.localEngine = new LocalGenAI({});
+    
+    // Optionally initialize Google engine if API key provided
+    const apiKey = _opts?.apiKey || process.env.GEMINI_API_KEY;
+    if (apiKey && !(_opts?.preferLocal === false)) {
+      try {
+        this.googleEngine = new OfficialGoogleGenAI({ apiKey });
+      } catch (e) {
+        console.warn('[llm-client] Google GenAI initialization failed, using local only:', e);
+      }
+    }
 
-    const generateContent = async (
-      args: GenerateContentArgs
-    ): Promise<AIResult> => {
-      
-      const doGenerate = async (modelName: string) => {
-        return this.client.models.generateContent({
-          model: modelName,
-          contents: args.contents as any,
-          config: args.config as any,
-        });
+    const generateContent = async (args: GenerateContentArgs): Promise<AIResult> => {
+      // Try local first
+      try {
+        const result = await this.localEngine.models.generateContent(args as LocalGenerateContentArgs);
+        if (!result.isAIFailed) {
+          return result as AIResult;
+        }
+        console.warn('[llm-client] Local engine returned failure, trying fallback:', result.reason);
+      } catch (localErr) {
+        console.warn('[llm-client] Local engine error:', localErr);
+      }
+
+      // Fallback to Google if available
+      if (this.googleEngine) {
+        try {
+          const doGenerate = async (modelName: string) => {
+            return this.googleEngine!.models.generateContent({
+              model: modelName,
+              contents: args.contents as any,
+              config: args.config as any,
+            });
+          };
+
+          const response = await doGenerate(MODEL_CONFIG.primaryModel);
+          return { text: response.text || "" };
+        } catch (googleErr) {
+          console.error('[llm-client] Google primary model failed:', googleErr);
+        }
+
+        try {
+          const response = await this.googleEngine.models.generateContent({
+            model: MODEL_CONFIG.fallbackModel,
+            contents: args.contents as any,
+            config: args.config as any,
+          });
+          return { text: response.text || "" };
+        } catch (fallbackErr) {
+          const reason = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
+          console.error('[llm-client] Google fallback model failed:', fallbackErr);
+          return {
+            isAIFailed: true,
+            reason: `All models exhausted. Local failed, Google failed: ${reason}`,
+          };
+        }
+      }
+
+      // Both failed
+      return {
+        isAIFailed: true,
+        reason: 'Local AI engine failed and no Google fallback available',
       };
-
-      try {
-        const response = await withRetry(
-          () => doGenerate(MODEL_CONFIG.primaryModel),
-          `generateContent[${MODEL_CONFIG.primaryModel}]`
-        );
-        return { text: response.text || "" };
-      } catch (primaryErr) {
-        console.error(`[llm-client] Primary model failed:`, primaryErr);
-      }
-
-      try {
-        const response = await withRetry(
-          () => doGenerate(MODEL_CONFIG.fallbackModel),
-          `generateContent[${MODEL_CONFIG.fallbackModel}]`
-        );
-        return { text: response.text || "" };
-      } catch (fallbackErr) {
-        const reason = fallbackErr instanceof Error ? fallbackErr.message : String(fallbackErr);
-        console.error(`[llm-client] Fallback model failed:`, fallbackErr);
-        return {
-          isAIFailed: true,
-          reason: `All models exhausted. Last error: ${reason}`,
-        };
-      }
     };
 
     const generateContentStream = async (
       args: GenerateContentArgs
     ): Promise<AsyncGenerator<{ text: string }>> => {
-      
-      const createStream = (modelName: string) => {
-        return this.client.models.generateContentStream({
-          model: modelName,
-          contents: args.contents as any,
-          config: args.config as any,
-        });
-      };
-
-      let stream: AsyncGenerator | null = null;
+      // Try local streaming first
       try {
-        stream = await withRetry(
-          () => Promise.resolve(createStream(MODEL_CONFIG.primaryModel)),
-          `generateContentStream[${MODEL_CONFIG.primaryModel}]`
-        );
-      } catch {
+        const stream = await this.localEngine.models.generateContentStream(args as LocalGenerateContentArgs);
+        return stream;
+      } catch (localErr) {
+        console.warn('[llm-client] Local streaming failed:', localErr);
+      }
+
+      // Fallback to Google streaming
+      if (this.googleEngine) {
         try {
-          stream = await withRetry(
-            () => Promise.resolve(createStream(MODEL_CONFIG.fallbackModel)),
-            `generateContentStream[${MODEL_CONFIG.fallbackModel}]`
-          );
-        } catch (err) {
-          const reason = err instanceof Error ? err.message : String(err);
-          async function* errorGen() {
-            yield { text: JSON.stringify({ isAIFailed: true, reason }) };
+          const createStream = (modelName: string) => {
+            return this.googleEngine!.models.generateContentStream({
+              model: modelName,
+              contents: args.contents as any,
+              config: args.config as any,
+            });
+          };
+
+          const stream = await createStream(MODEL_CONFIG.primaryModel);
+          
+          async function* chunkGenerator(): AsyncGenerator<{ text: string }> {
+            for await (const chunk of stream as any) {
+              yield { text: chunk.text || "" };
+            }
           }
-          return errorGen();
+          return chunkGenerator();
+        } catch (googleErr) {
+          console.error('[llm-client] Google streaming failed:', googleErr);
         }
       }
 
-      async function* chunkGenerator(): AsyncGenerator<{ text: string }> {
-        if (!stream) return;
-        for await (const chunk of stream as any) {
-          yield { text: chunk.text || "" };
-        }
+      // Error generator
+      async function* errorGen(): AsyncGenerator<{ text: string }> {
+        yield { text: JSON.stringify({ isAIFailed: true, reason: 'All streaming providers failed' }) };
       }
-
-      return chunkGenerator();
+      return errorGen();
     };
 
     this.models = { generateContent, generateContentStream };
+  }
+
+  // Expose method to check which engine is being used
+  getActiveEngine(): 'local' | 'google' {
+    return this.useGoogle ? 'google' : 'local';
+  }
+
+  // Force use of Google (for testing)
+  async enableGoogleFallback(apiKey?: string): Promise<boolean> {
+    const key = apiKey || process.env.GEMINI_API_KEY;
+    if (!key) return false;
+    
+    try {
+      this.googleEngine = new OfficialGoogleGenAI({ apiKey: key });
+      this.useGoogle = true;
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  // Disable Google, use local only
+  disableGoogleFallback(): void {
+    this.googleEngine = undefined;
+    this.useGoogle = false;
   }
 }
 
@@ -202,27 +234,42 @@ export class GoogleGenAI {
 // AI health check
 // ---------------------------------------------------------------------------
 
-export interface AIStatusResult {
-  healthy: boolean;
-  primaryModel: string;
-  fallbackModel: string;
-  provider: string;
-}
-
 export async function getAIStatus(): Promise<AIStatusResult> {
-  const base: Omit<AIStatusResult, "healthy"> = {
+  // Check local first
+  try {
+    const localStatus = await localGetAIStatus();
+    if (localStatus.healthy) {
+      return localStatus;
+    }
+  } catch (e) {
+    console.warn('[llm-client] Local health check failed:', e);
+  }
+
+  // Check Google if available
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (apiKey) {
+    try {
+      const client = new OfficialGoogleGenAI({ apiKey });
+      await client.models.get({ model: MODEL_CONFIG.primaryModel });
+      return {
+        healthy: true,
+        primaryModel: MODEL_CONFIG.primaryModel,
+        fallbackModel: MODEL_CONFIG.fallbackModel,
+        provider: 'https://generativelanguage.googleapis.com (Google Gemini)',
+      };
+    } catch (err) {
+      console.error('[llm-client] Google health check failed:', err);
+    }
+  }
+
+  return {
+    healthy: false,
     primaryModel: MODEL_CONFIG.primaryModel,
     fallbackModel: MODEL_CONFIG.fallbackModel,
-    provider: MODEL_CONFIG.providerUrl,
+    provider: LOCAL_MODEL_CONFIG.providerUrl,
   };
-
-  try {
-    const client = new OfficialGoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-    // Minimal check: try to fetch a model info
-    await client.models.get({ model: MODEL_CONFIG.primaryModel });
-    return { healthy: true, ...base };
-  } catch (err) {
-    console.error("[llm-client] getAIStatus failed:", err);
-    return { healthy: false, ...base };
-  }
 }
+
+// Export LocalGenAI for direct access if needed
+export { LocalGenAI, localGetAIStatus };
+export type { LocalGenerateContentArgs, LocalAIResult };

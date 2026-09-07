@@ -339,38 +339,30 @@ export async function runFullOrchestration(
     endpointSpecs.map(s => checkEndpoint(s.name, `${baseUrl}${s.path}`, s.payload))
   );
 
-  // 3. AI self-validation
+// 3. AI self-validation (uses local engine - no API key needed)
   let aiCheck: QACheck;
-  if (aiStatus.healthy) {
-    const start = Date.now();
-    try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-      const result = await ai.models.generateContent({
-        contents: `Self-check: respond ONLY with valid JSON: {"status":"ok","module":"QA Orchestrator"}`,
-        config: { responseMimeType: "application/json" }
-      });
-      const durationMs = Date.now() - start;
-      let parsed: Record<string, unknown> = {};
-      if (result.isAIFailed) { throw new Error(result.reason); }
-      try { parsed = JSON.parse(result.text || "\{}"); } catch { /* ignore */ }
-      const ok = parsed.status === "ok";
-      aiCheck = {
-        name: "AI Self-Validation", endpoint: aiStatus.provider,
-        status: ok ? "PASS" : "FAIL", durationMs,
-        details: ok ? `AI healthy Ã¢â‚¬â€ model: ${aiStatus.primaryModel}` : `Invalid AI response: ${result.text?.slice(0,200)}`
-      };
-    } catch (err: unknown) {
-      aiCheck = {
-        name: "AI Self-Validation", endpoint: aiStatus.provider,
-        status: "FAIL", durationMs: Date.now() - start,
-        details: `AI self-validation threw: ${err instanceof Error ? err.message : String(err)}`
-      };
-    }
-  } else {
+  const start = Date.now();
+  try {
+    const ai = new GoogleGenAI({ preferLocal: true });
+    const result = await ai.models.generateContent({
+      contents: `Self-check: respond ONLY with valid JSON: {"status":"ok","module":"QA Orchestrator"}`,
+      config: { responseMimeType: "application/json" }
+    });
+    const durationMs = Date.now() - start;
+    let parsed: Record<string, unknown> = {};
+    if (result.isAIFailed) { throw new Error(result.reason); }
+    try { parsed = JSON.parse(result.text || "{}"); } catch { /* ignore */ }
+    const ok = parsed.status === "ok";
     aiCheck = {
       name: "AI Self-Validation", endpoint: aiStatus.provider,
-      status: "SKIP", durationMs: 0,
-      details: "Skipped Ã¢â‚¬â€ AI layer is unhealthy. Rule-based fallback test cases generated."
+      status: ok ? "PASS" : "FAIL", durationMs,
+      details: ok ? `AI healthy \u2014 model: ${aiStatus.primaryModel}` : `Invalid AI response: ${result.text?.slice(0,200)}`
+};
+  } catch (err: unknown) {
+    aiCheck = {
+      name: "AI Self-Validation", endpoint: aiStatus.provider,
+      status: "FAIL", durationMs: Date.now() - start,
+      details: `AI self-validation threw: ${err instanceof Error ? err.message : String(err)}`
     };
   }
 
@@ -389,7 +381,7 @@ export async function runFullOrchestration(
   const escalationRequired = overallStatus === "FAIL" || overallStatus === "AI_FAILED";
   const escalationReason = escalationRequired
     ? overallStatus === "AI_FAILED"
-      ? `AI model (${aiStatus.primaryModel}) unavailable. Check GEMINI_API_KEY. Rule-based fallback test cases generated.`
+      ? `AI model (${aiStatus.primaryModel}) unavailable. Local AI engine failed. Rule-based fallback test cases generated.`
       : `${failedCount}/${total} endpoint checks failed. Manual investigation required.`
     : null;
 

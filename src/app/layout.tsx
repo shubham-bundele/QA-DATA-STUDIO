@@ -1,8 +1,9 @@
 import type { Metadata } from "next"
 import { Geist, Geist_Mono } from "next/font/google"
-import { ThemeProvider } from "next-themes"
+import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "sonner"
 import { TooltipProvider } from "@/components/ui/tooltip"
+import { ModelDownloadManager } from "@/components/ModelDownloadManager"
 import { siteConfig } from "@/config/site"
 import "./globals.css"
 
@@ -54,7 +55,8 @@ export default function RootLayout({
                 </div>
               </footer>
 
-              <div className="pointer-events-none fixed bottom-6 right-6 z-30 flex justify-end animate-float" style={{ animationDuration: '8s' }}>
+              {/* Watermark */}
+              <div className="pointer-events-none fixed bottom-6 right-24 z-30 flex justify-end animate-float" style={{ animationDuration: '8s' }}>
                 <a href="https://www.linkedin.com/in/connectshubham23/" target="_blank" rel="noreferrer" className="site-watermark pointer-events-auto group" aria-label="Handcrafted by Shubham Bundele">
                   <div className="site-watermark__monogram-wrapper">
                     <span className="site-watermark__monogram shadow-inner">SB</span>
@@ -72,6 +74,9 @@ export default function RootLayout({
                   </svg>
                 </a>
               </div>
+
+              {/* Model Download Manager */}
+              <ModelDownloadManager />
             </div>
           </TooltipProvider>
           <Toaster position="bottom-right" richColors />

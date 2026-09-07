@@ -3,6 +3,7 @@
 import { useRef, useState, useEffect } from "react"
 import Link from "next/link"
 import { motion, useInView } from "framer-motion"
+import { AuroraBackground } from "@/components/aurora-background"
 import {
   ArrowRight,
   Lock,
@@ -107,12 +108,19 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col overflow-x-hidden relative">
+      <div className="absolute inset-0 z-[-11]">
+        <AuroraBackground />
+      </div>
+      
       <iframe 
         ref={iframeRef}
         src="/vanta-network.html" 
-        className="fixed inset-0 z-[-10] h-full w-full border-none pointer-events-none"
+        className="fixed inset-0 z-[-10] h-full w-full border-none pointer-events-none mix-blend-screen"
         title="Vanta Network Background"
       />
+      
+      {/* Background overlay for text readability */}
+      <div className="fixed inset-0 z-[-9] pointer-events-none bg-black/30" />
 
       {/* HERO */}
       <section className="relative flex min-h-[92vh] items-center justify-center overflow-hidden px-4">
