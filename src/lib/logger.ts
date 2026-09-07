@@ -30,7 +30,7 @@ export interface LogEntry {
 }
 
 // Pretty printer for development
-const prettyTransport = pino.transport({
+const prettyTransport = {
   target: 'pino-pretty',
   options: {
     colorize: true,
@@ -38,7 +38,7 @@ const prettyTransport = pino.transport({
     ignore: 'pid,hostname',
     singleLine: false
   }
-});
+};
 
 // Create logger instance
 let logger: pino.Logger;
@@ -58,7 +58,7 @@ if (typeof window === 'undefined' && process.env.NEXT_RUNTIME === 'edge') {
   // Development with pretty printing
   logger = pino({
     level: process.env.LOG_LEVEL || 'debug',
-    transport: prettyTransport,
+    transport: prettyTransport as any,
     formatters: {
       level: (label) => ({ level: label })
     }
@@ -99,9 +99,9 @@ export function logRequest(req: Request, context: LogContext = {}) {
     ...context,
     method: req.method,
     url: req.url,
-    userAgent: req.headers.get('user-agent'),
-    ip: req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
-         req.headers.get('x-real-ip')
+    userAgent: (req.headers.get('user-agent') || undefined) as string | undefined,
+    ip: (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+         req.headers.get('x-real-ip') || undefined) as string | undefined
   });
   
   requestLogger.info({ req: { method: req.method, url: req.url } }, 'Incoming request');

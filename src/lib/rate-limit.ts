@@ -134,7 +134,7 @@ export class RateLimiter {
   private memory = new MemoryRateLimitStore();
   private redis = new RedisRateLimitStore();
   private useRedis = false;
-  private defaultConfig: Required<RateLimitConfig>;
+  private defaultConfig: Omit<Required<RateLimitConfig>, 'handler'> & Pick<RateLimitConfig, 'handler'>;
 
   constructor(defaultConfig: Partial<RateLimitConfig> = {}) {
     this.defaultConfig = {
@@ -143,7 +143,7 @@ export class RateLimiter {
       keyPrefix: defaultConfig.keyPrefix || 'rl',
       skipSuccessfulRequests: defaultConfig.skipSuccessfulRequests || false,
       skipFailedRequests: defaultConfig.skipFailedRequests || false,
-      handler: defaultConfig.handler
+      handler: defaultConfig.handler as any
     };
     
     this.useRedis = this.redis.isAvailable();
@@ -230,7 +230,7 @@ export class RateLimiter {
     }
   }
 
-  getConfig(): Required<RateLimitConfig> {
+  getConfig(): RateLimitConfig {
     return { ...this.defaultConfig };
   }
 }
